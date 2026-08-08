@@ -1,0 +1,10 @@
+{
+  "name": "qgeometry-dash",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Geometry Dash-style web game built with Phaser 3. No build step: serve the folder and open in a browser.",
+  "scripts": {
+    "start": "python -m http.server 8080"
+  }
+}

@@ -1,0 +1,115 @@
+// Level 4 — Out Lost (Dry Out-inspired). First triple spikes, tight 4-row ship
+// corridors, and a narrow width-3 tunnel with frequent forced flips. ~89 s.
+
+import {
+  block, spike, spikes, spikeDown, portal, checkpoint,
+  tunnel, tspike, finish, ceiling, pad,
+} from './helpers.js';
+
+export default {
+  id: 4,
+  name: 'Out Lost',
+  lengthCells: 780,
+  song: 'song4',
+  bg: { hue: 0xcc8822 },
+  objects: [
+    // --- cube opener (0–156): triples arrive ---
+    ...spikes(16, 0, 2),
+    spike(26),
+    spike(33), block(34, 0, 2, 1),
+    ...spikes(44, 0, 2),
+    ...spikes(54, 0, 3),
+    block(68, 0, 4, 1), ...spikes(72, 0, 2), block(74, 1, 4, 1),
+    ...spikes(86, 0, 2),
+    block(96, 0, 1, 1),
+    spike(100),
+    checkpoint(117),
+    ...spikes(130, 0, 3),
+    spike(142),
+    ...spikes(150, 0, 2),
+
+    // --- ship one (158–260): 4-row corridor ---
+    portal(158, 'ship'),
+    ceiling(160, 100, 4),
+    block(172, 0, 1, 2),
+    spikeDown(182, 3),
+    block(192, 2, 2, 2),
+    spike(202),
+    block(210, 0, 1, 2),
+    spikeDown(220, 3),
+    spike(230),
+    block(238, 2, 2, 2),
+    checkpoint(257),
+    portal(260, 'cube', 0, 1, 4),      // full corridor height
+
+    // --- cube midsection (262–388) ---
+    ...spikes(270, 0, 2),
+    ...spikes(280, 0, 3),
+    spike(291), block(292, 0, 3, 1),
+    ...spikes(302, 0, 2),
+    pad(309),                           // launch onto the elevated chain
+    block(312, 1, 2, 1), ...spikes(314, 0, 2), block(316, 2, 2, 1),
+    ...spikes(318, 0, 2), block(320, 1, 2, 1),
+    ...spikes(330, 0, 3),
+    spike(342),
+    ...spikes(350, 0, 2),
+    block(360, 0, 1, 1),
+    spike(364),
+    ...spikes(374, 0, 2),
+    checkpoint(386),
+
+    // --- narrow triangle tunnel (390–498): width 3 ---
+    portal(391, 'triangle', 0, 1, 4),
+    tunnel(390, 12, 1, 4),
+    tunnel(402, 10, 2, 5),
+    tspike(407, 'floor'),
+    tunnel(412, 10, 4, 7),
+    tspike(417, 'ceil'),
+    tunnel(422, 10, 2, 5),
+    tspike(427, 'floor'),
+    tunnel(432, 10, 3, 6),
+    tspike(437, 'ceil'),
+    tunnel(442, 10, 1, 4),
+    tspike(447, 'floor'),
+    tunnel(452, 10, 2, 5),
+    tspike(457, 'ceil'),
+    tunnel(462, 14, 1, 4),
+    tunnel(476, 12, 2, 5),
+    tspike(482, 'floor'),
+    tunnel(488, 10, 1, 4),
+    portal(494, 'cube', 1, 1, 4),
+
+    // --- ship two (500–582) ---
+    portal(500, 'ship'),
+    ceiling(500, 82, 4),
+    spikeDown(508, 3),
+    checkpoint(522),
+    block(530, 0, 1, 2),
+    spike(538),
+    block(546, 2, 2, 2),
+    spikeDown(556, 3),
+    spike(564),
+    block(570, 0, 1, 2),
+    portal(582, 'cube', 0, 1, 4),
+
+    // --- long cube closer (584–780) ---
+    ...spikes(592, 0, 3),
+    ...spikes(604, 0, 2),
+    block(614, 0, 1, 1),
+    spike(618),
+    ...spikes(628, 0, 3),
+    block(640, 0, 4, 1), ...spikes(644, 0, 2), block(646, 1, 4, 1),
+    checkpoint(663),
+    ...spikes(674, 0, 3),
+    spike(686),
+    ...spikes(694, 0, 2),
+    block(704, 0, 1, 1),
+    spike(708),
+    ...spikes(718, 0, 3),
+    ...spikes(730, 0, 2),
+    spike(740),
+    ...spikes(748, 0, 2),
+    spike(758),
+    finish(774),
+  ],
+};
