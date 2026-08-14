@@ -149,11 +149,15 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
   logic. All passing. The invariants were mutation-checked: breaking a tunnel
   shift, a checkpoint percentage, a pad, a level name, `nextLevelId`, a season's
   status, or season 3's clickability each makes a named check fail.
-- **Season 2 (levels 6–10) has NOT been bot-verified end to end.** They pass
-  every static invariant, and their patterns are copied from shapes the bot
-  already cleared in levels 1–5, but no run has confirmed them completable.
-  Do that first if season 2 difficulty comes up: inject `tools/autoplay.js` on
-  each of 6–10 and check `__bot.summary()`.
+- **End-to-end playthroughs (season 2): DONE (2026-08-14, `tools/botrun.mjs`).**
+  All 5 levels completed by the bot on the first run with **zero deaths**, in
+  97 / 101 / 104 / 108 / 115 s against design targets of 98 / 102 / 105 / 110 /
+  117 s. Level 1 was replayed the same way as a harness control (69 s vs the
+  70.8 s recorded in 2026-08-08's browser-automation run), so the runner
+  measures the same game the earlier session did.
+  Caveat: a bot clearing a level says it is **possible**, not that it is fairly
+  tuned for a human — the bot has frame-perfect lookahead. Season 2's human
+  difficulty is still unmeasured; the observations below apply to season 1 only.
 - **End-to-end playthroughs (season 1): DONE (2026-08-08, browser automation).** All 5
   levels completed by `tools/autoplay.js` (see below) with zero deaths on the
   final bot runs. Completion times ≈ design targets: 70.8 / 77.3 / 83.9 / 90.7 /
@@ -164,7 +168,16 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
   highlight. A "Bot" player profile holds the reference times (#1 on each
   board); delete via Menu → Players & Colors if unwanted.
 
-## Autoplayer (tools/autoplay.js)
+## Autoplayer (tools/autoplay.js) and the headless runner (tools/botrun.mjs)
+
+`node tools/botrun.mjs [levels...]` is the automated way to answer "is this level
+completable?". It launches headless Edge/Chrome, talks the DevTools Protocol over
+Node's built-in WebSocket (no npm packages, matching the project's zero-dependency
+rule), loads `?level=N`, injects the bot, and polls `__bot.summary()` until the
+level finishes, stalls for 120 s, or hits a 300 s cap. Exit code 0 only if every
+requested level completed. It needs `npm start` running in another shell. Rerun it
+after editing any level layout — the static invariants in smoke.mjs cannot tell
+you whether a jump is actually makeable.
 
 In-page playtest bot. Inject while a level is running (needs `window.game`,
 exposed in main.js):
@@ -195,7 +208,8 @@ inflate spike rects ~3 px so near-misses read as deaths.
 
 ## Likely next steps
 
-Bot-verify levels 6–10 end to end (see Verification state — the one gap in
-season 2). Then tune difficulty per the observations above (user decides feel);
+Play season 2 by hand (or watch a bot run) to judge human difficulty — the bot
+completing all five with zero deaths proves they are possible, not that they are
+fun. Then tune difficulty per the observations above (user decides feel);
 possible features: season 3 content, more pad types (GD blue/pink pads, orbs),
 level-unlock progression, gamepad support, export/import of the save blob.

@@ -65,10 +65,11 @@ by best progress.
 
 Feature-complete: 10 levels across 2 released seasons, 3 modes (cube / ship /
 triangle), launch pads, checkpoints, player profiles with 7 colors, local
-leaderboards, synthesized music. Two playtest bugs fixed: unreachable platforms (solved with launch pads +
-an automated reachability check) and a ship→cube portal clip-through (solved by
-preserving the hitbox's bottom edge across mode switches + an under-ground
-failsafe). Full development history and architecture notes: **notes.md**.
+leaderboards, synthesized music. Two playtest bugs fixed: unreachable platforms
+(solved with launch pads + an automated reachability check) and a ship→cube
+portal clip-through (solved by preserving the hitbox's bottom edge across mode
+switches + an under-ground failsafe). Full development history and architecture
+notes: **notes.md**.
 
 ## Dev tools
 
@@ -76,10 +77,13 @@ failsafe). Full development history and architecture notes: **notes.md**.
 - `?cp=4` — spawn at checkpoint 4
 - **H** in-game — show physics hitboxes
 - `node tools/smoke.mjs` — headless smoke test (module imports, level-data
-  invariants, storage/leaderboard logic)
-- `tools/autoplay.js` — in-page autoplayer bot for playtesting; inject from the
-  console while a level runs (see notes.md). All 5 levels are verified
-  completable end-to-end by it.
+  invariants, season/level agreement, scene routing, storage/leaderboard logic)
+- `node tools/botrun.mjs [levels...]` — plays levels for real in headless Edge or
+  Chrome (DevTools Protocol, no npm packages) and reports whether the autoplayer
+  finished each one. Needs `npm start` running in another shell.
+- `tools/autoplay.js` — the bot itself; also injectable from the console while a
+  level runs (see notes.md) for interactive playtesting. All 10 levels are
+  verified completable end-to-end by it.
 - All physics tuning numbers live in `src/constants.js`; all level layouts in
   `src/levels/level*.js` (grid coordinates: x in cells, y in rows above ground).
 
