@@ -12,7 +12,7 @@ export class MenuScene extends Phaser.Scene {
     const cx = GAME_W / 2;
 
     this.add.tileSprite(0, 0, GAME_W, GAME_H, 'deco').setOrigin(0).setAlpha(0.8);
-    makeTitle(this, cx, 130, 'QDASH', 88);
+    makeTitle(this, cx, 130, 'Q DASH', 88);
     makeText(this, cx, 190, 'jump • fly • flip', 22, '#8890c8');
 
     const profile = storage.current();
