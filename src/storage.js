@@ -59,6 +59,13 @@ class Storage {
     return id;
   }
 
+  // For Play-with-no-profile: a throwaway name so a first-timer never has to
+  // fill in a form first. Digits keep it distinguishable on the leaderboard.
+  createRandomPlayer() {
+    const n = Math.floor(Math.random() * 10000);
+    return this.createPlayer(`Player${String(n).padStart(4, '0')}`);
+  }
+
   deletePlayer(id) {
     delete this.data.players[id];
     delete this.data.records[id];

@@ -170,6 +170,47 @@ else ok('player delete cascades and clears current');
 const raw = JSON.parse(store.get('qdash.save.v1'));
 if (raw.players[c] || raw.records[c]) fail('deleted player left data behind');
 
+// Play with no profile auto-creates one: it must end up selected, and its name
+// must survive the 12-char cap createPlayer applies.
+const autoId = storage.createRandomPlayer();
+const auto = storage.current();
+if (!autoId || !auto || auto.id !== autoId) {
+  fail('createRandomPlayer should create the player and select it');
+} else if (!/^Player\d{4}$/.test(auto.name) || auto.name.length > 12) {
+  fail(`createRandomPlayer produced an unusable name: ${auto.name}`);
+} else ok('createRandomPlayer creates a selected, well-named profile');
+
+// Play routing: the three states MenuScene.startPlay has to tell apart. create()
+// needs a real Phaser display list, but startPlay only needs scene.start.
+const { MenuScene } = await import(new URL('../src/scenes/MenuScene.js', import.meta.url));
+const menu = new MenuScene();
+let started = null;
+menu.scene = { start: (key, data) => { started = { key, data }; } };
+
+for (const p of storage.playerList()) storage.deletePlayer(p.id);
+started = null;
+menu.startPlay();
+if (started?.key !== 'Game' || started.data.levelId !== 1) {
+  fail(`Play with no profiles should start level 1, got ${JSON.stringify(started)}`);
+} else if (!storage.current()) {
+  fail('Play with no profiles should leave the auto-created player selected');
+} else ok('Play with no profiles auto-creates a player and starts level 1');
+
+started = null;
+menu.startPlay();                                  // the auto-created player is now current
+if (started?.key !== 'LevelSelect') {
+  fail(`Play with a current player should open level select, got ${started?.key}`);
+} else ok('Play with a current player opens level select');
+
+storage.deletePlayer(storage.createPlayer('Keeper'));   // profiles remain, none selected
+started = null;
+menu.startPlay();
+if (started?.key !== 'PlayerSelect') {
+  fail(`Play with profiles but none selected should open the picker, got ${started?.key}`);
+} else if (storage.playerList().length !== 1) {
+  fail('Play with profiles but none selected should not create another profile');
+} else ok('Play with profiles but none selected opens the picker');
+
 // Saves written before the QDash rename must survive: fresh Storage falls back
 // to the legacy key, then re-saves under the new one. Query string forces a
 // second module instance so the constructor runs again.
