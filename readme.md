@@ -81,12 +81,26 @@ notes: **notes.md**.
 - `node tools/botrun.mjs [levels...]` — plays levels for real in headless Edge or
   Chrome (DevTools Protocol, no npm packages) and reports whether the autoplayer
   finished each one. Needs `npm start` running in another shell.
+- `node tools/shot.mjs <level> <seconds...> [--die]` — screenshots the running
+  game at each timestamp (and mid-death with `--die`) into `tools/shots/`, for
+  checking visual changes instead of guessing at them.
 - `tools/autoplay.js` — the bot itself; also injectable from the console while a
   level runs (see notes.md) for interactive playtesting. All 10 levels are
   verified completable end-to-end by it.
 - All physics tuning numbers live in `src/constants.js`; all level layouts in
   `src/levels/level*.js` (grid coordinates: x in cells, y in rows above ground).
 
+## Look
+
+Each level has its own colour, and each **mode section within a level** has its
+own accent — the terrain, hazards, tunnel neon and background all shift when you
+pass through a portal, so a level's ship stretch feels like a different place
+from its cube stretch. Crashing shatters the cube into tumbling shards with a
+shockwave ring, and the player leaves a trail that changes per form: a spray off
+the cube, a thruster stream behind the ship, a streak behind the triangle.
+
 All art is generated at boot from Phaser Graphics and every sound — including
 each level's chiptune track — is synthesized live with the Web Audio API, so the
-repo ships zero asset files and nothing copyrighted.
+repo ships zero asset files and nothing copyrighted. The obstacle textures are
+drawn in greyscale and tinted at runtime, which is what makes the per-section
+palettes possible without a single extra image.

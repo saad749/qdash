@@ -73,6 +73,49 @@ Decisions taken up front:
 - [x] routing: Play → SeasonSelect, season card → LevelSelect for that season
 - [x] regression: levels 1–5 metadata unchanged (names, lengths, songs)
 
+## Visual pass plan — "it feels dull next to GD"
+
+Three asks: obstacles coloured differently at some points so sections feel
+different, a break-apart animation when the player crashes, and a trail behind
+the moving player.
+
+Decisions taken up front:
+- **Tint, don't re-author.** `block` / `spike` / `ground` are redrawn in
+  greyscale so a runtime `setTint` can produce any colour. Shapes, sizes and
+  hitboxes are untouched, so no level data changes and physics is unaffected.
+- **Colour follows the mode section.** Obstacles take the palette of the section
+  they stand in (cube / ship / triangle), so the world changes colour at every
+  portal. That is where "different feelings at some points" comes from, and it
+  doubles as a read on the mode switch the player has to react to.
+- **One accent per level per mode, everything else derived.** 30 authored
+  colours instead of ~90: block = accent darkened, spike = accent lightened,
+  ground = cube accent darkened hard. Keeps every section internally coherent.
+- **Readability first.** Spikes stay light-bodied with a dark core in every
+  palette — a hazard must never blend into the terrain it sits on.
+
+### Data
+- [x] `src/palette.js` — per-level accents + derived block/spike/ground colours
+- [x] greyscale `block` / `spike` / `ground` textures, new `shard` texture
+- [x] `LevelBuilder` tints each block/spike by the mode section it falls in
+- [x] tunnel neon and backdrop ground/deco take the level palette
+
+### Effects
+- [x] death: the cube shatters into tumbling shards under gravity, plus an
+      impact flash — replacing the flat square burst, keeping shake and timing
+- [x] trail: per-mode emitter following the player (cube spray, ship thruster,
+      triangle streak); stops on death, resumes on respawn
+
+### Tests
+- [x] every level resolves a palette; all mode keys present and valid 24-bit hex
+- [x] derived colours stay in range and spikes stay lighter than their blocks
+- [x] every texture key referenced by code exists in the generator
+- [x] bot re-run: 9/10, and the one failure (level 3 cell 545) reproduces with
+      the visual work stashed — so the effects cost nothing. Season 2 times came
+      back within a second of their pre-visual-pass values (97/100/104/108/115 s)
+- [x] screenshots captured and eyeballed for each season (`tools/shot.mjs`);
+      the first attempt was *worse* — a too-light block body turned tinting into
+      pastel mud — which is exactly why this step is not optional
+
 ## Requirements implemented (all confirmed with the user)
 
 - 5 levels, designs mirroring the first five official GD levels, but named:
@@ -114,6 +157,11 @@ Decisions taken up front:
 - `seasons.js` — season list + `seasonOf` / `nextLevelId` / `releaseLabel`. The
   only place a level id is tied to a season; smoke.mjs asserts it agrees with
   `levels/index.js` in both directions.
+- `palette.js` — one accent per level per mode; block/spike/backdrop/ground are
+  derived from it. `block`, `spike` and `ground` textures are drawn in greyscale
+  precisely so this can tint them, so never re-colour those textures directly —
+  do it here. `GameScene.applyModeVisuals` rebuilds the trail and cross-fades the
+  backdrop whenever the form changes.
 - `scenes/` — Boot, Menu, PlayerSelect, SeasonSelect, LevelSelect, Game (core
   loop), Hud (parallel overlay via game-events qdash:*), Pause, LevelComplete,
   Leaderboard. Leaderboard tabs are per season, not one row of ten.
@@ -158,9 +206,24 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
   Caveat: a bot clearing a level says it is **possible**, not that it is fairly
   tuned for a human — the bot has frame-perfect lookahead. Season 2's human
   difficulty is still unmeasured; the observations below apply to season 1 only.
+- **KNOWN GAP — level 3 no longer clears cell 545 under `botrun.mjs`.** A full
+  10-level run on 2026-08-14 came back 9/10: level 3 stalls at 76 %, dying 15×
+  at cell 545 — the spike sitting on the trailing edge of `stairs(540, 3, 2)`,
+  the spot already called out under difficulty observations as "tight but fair".
+  It is **not** a regression from the visual pass: the same run on the previous
+  commit, with the visual work stashed, fails identically (same cell, same death
+  count), and `src/levels/level3.js` has not been touched since the initial
+  commit. So the level data is byte-identical to when it was recorded as passing
+  in 2026-08-08's run — what changed is the harness/environment.
+  Most likely the bot rather than the level: clearing a spike at a step's
+  trailing edge needs a *late* jump, and the cube logic deliberately "jumps at
+  the FIRST fully-safe frame, never the last viable one". Unresolved — either
+  teach the bot to consider late jumps, or move the spike a cell in from the
+  edge. Don't assume level 3 is broken for humans on this evidence alone.
 - **End-to-end playthroughs (season 1): DONE (2026-08-08, browser automation).** All 5
   levels completed by `tools/autoplay.js` (see below) with zero deaths on the
-  final bot runs. Completion times ≈ design targets: 70.8 / 77.3 / 83.9 / 90.7 /
+  final bot runs. (Level 3 no longer reproduces — see the known gap above;
+  levels 1, 2, 4 and 5 still complete, in 68 / 75 / 101 / 95 s on 2026-08-14.) Completion times ≈ design targets: 70.8 / 77.3 / 83.9 / 90.7 /
   96.8 s. Verified along the way: all portals/mode switches, launch pads,
   checkpoint respawns (incl. mid-tunnel checkpoints), tunnel shift/spike kills,
   wall-face + corner-forgiveness deaths, completion screen (no "Next Level" on

@@ -6,6 +6,7 @@ import {
   DEATH_RESPAWN_MS, PAD, gx,
 } from '../constants.js';
 import { buildLevel } from '../game/LevelBuilder.js';
+import { paletteFor, lighten, darken, mix } from '../palette.js';
 import { PlayerController } from '../game/Player.js';
 import { LEVELS } from '../levels/index.js';
 import { storage } from '../storage.js';
@@ -36,13 +37,15 @@ export class GameScene extends Phaser.Scene {
     this.bestPct = 0;
     this.lastPct = -1;
     this.currentTunnel = null;
+    this.palette = paletteFor(this.levelId);
 
     this.buildBackdrop(level);
-    this.built = buildLevel(this, level);
+    this.built = buildLevel(this, level, this.palette);
 
     const spawnY = GROUND_Y - 30;
     this.player = new PlayerController(this, gx(2), spawnY, this.playerTint);
     this.snapshot = this.player.snapshot();
+    this.applyModeVisuals(this.player.mode);
 
     this.cameras.main.setBounds(0, 0, this.built.worldW, GAME_H);
 
@@ -115,16 +118,115 @@ export class GameScene extends Phaser.Scene {
   }
 
   buildBackdrop(level) {
-    this.add.rectangle(0, 0, GAME_W, GAME_H, level.bg.hue, 0.22)
+    const pal = this.palette;
+    // Washed per section (see applyModeVisuals); level.bg.hue still identifies
+    // the level on the select cards.
+    this.bgColor = pal.modes.cube.backdrop;
+    this.bgRect = this.add.rectangle(0, 0, GAME_W, GAME_H, this.bgColor, 0.55)
       .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.BG);
     this.decoFar = this.add.tileSprite(0, 0, GAME_W, GAME_H, 'deco')
-      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.DECO).setTileScale(2).setAlpha(0.7);
+      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.DECO).setTileScale(2)
+      .setAlpha(0.7).setTint(pal.deco);
     this.decoNear = this.add.tileSprite(0, 0, GAME_W, GAME_H, 'deco')
-      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.DECO);
+      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.DECO).setTint(pal.deco);
     this.groundTile = this.add.tileSprite(0, GROUND_Y, GAME_W, GAME_H - GROUND_Y, 'ground')
+      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GROUND).setTint(pal.ground);
+    this.add.rectangle(0, GROUND_Y - 2, GAME_W, 3, lighten(pal.modes.cube.accent, 0.5), 0.85)
       .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GROUND);
-    this.add.rectangle(0, GROUND_Y - 2, GAME_W, 3, 0xffffff, 0.45)
-      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GROUND);
+  }
+
+  // Everything that changes when the form changes: the wake behind the player
+  // and the colour of the world. Both double as feedback for the mode switch.
+  applyModeVisuals(mode) {
+    this.setTrail(mode);
+    const to = this.palette.modes[mode].backdrop;
+    const from = this.bgColor;
+    if (from === to) return;
+    this.tweens.addCounter({
+      from: 0, to: 1, duration: 450,
+      onUpdate: (tw) => {
+        this.bgColor = mix(from, to, tw.getValue());
+        this.bgRect.setFillStyle(this.bgColor, 0.55);
+      },
+    });
+  }
+
+  // One emitter that follows the player, rebuilt when the mode changes — each
+  // form leaves a different wake.
+  setTrail(mode) {
+    if (this.trail) this.trail.destroy();
+    this.trailMode = mode;
+    const tint = this.playerTint;
+    const shared = {
+      follow: this.player.sprite,
+      tint: [tint, lighten(tint, 0.45), this.palette.modes[mode].accent],
+      blendMode: 'ADD',
+      emitting: !this.dead && !this.finished,
+    };
+    const perMode = {
+      [MODES.CUBE]: {
+        followOffset: { x: -20, y: 16 },
+        speed: { min: 20, max: 120 }, angle: { min: 150, max: 215 },
+        lifespan: 420, frequency: 24, quantity: 2,
+        scale: { start: 0.9, end: 0 }, alpha: { start: 0.85, end: 0 },
+      },
+      [MODES.SHIP]: {
+        followOffset: { x: -34, y: 4 },
+        speed: { min: 60, max: 200 }, angle: { min: 165, max: 195 },
+        lifespan: 340, frequency: 16, quantity: 2,
+        scale: { start: 1.1, end: 0 }, alpha: { start: 0.95, end: 0 },
+      },
+      [MODES.TRI]: {
+        followOffset: { x: -18, y: 0 },
+        speed: { min: 10, max: 70 }, angle: { min: 160, max: 200 },
+        lifespan: 500, frequency: 18, quantity: 2,
+        scale: { start: 0.75, end: 0 }, alpha: { start: 0.9, end: 0 },
+      },
+    };
+    this.trail = this.add.particles(0, 0, 'particle', { ...shared, ...perMode[mode] })
+      .setDepth(DEPTH.PLAYER - 1);
+  }
+
+  // Death: the cube comes apart. Shards inherit the player's colour, tumble
+  // outward under gravity, and an expanding flash sells the impact.
+  shatter(x, y) {
+    const tint = this.playerTint;
+    const ring = this.add.image(x, y, 'ring')
+      .setTint(lighten(tint, 0.55)).setDepth(DEPTH.FX).setScale(0.25).setAlpha(0.95)
+      .setBlendMode('ADD');
+    this.tweens.add({
+      targets: ring, scale: 2.8, alpha: 0, duration: 420,
+      ease: 'Cubic.easeOut', onComplete: () => ring.destroy(),
+    });
+    const flash = this.add.image(x, y, 'particle')
+      .setTint(0xffffff).setDepth(DEPTH.FX).setScale(4).setAlpha(0.95)
+      .setBlendMode('ADD');
+    this.tweens.add({
+      targets: flash, scale: 10, alpha: 0, duration: 200,
+      ease: 'Cubic.easeOut', onComplete: () => flash.destroy(),
+    });
+
+    const shards = this.add.particles(x, y, 'shard', {
+      speed: { min: 180, max: 560 },
+      angle: { min: 190, max: 350 },            // thrown up and outward
+      gravityY: 1900,
+      lifespan: 950,
+      rotate: { min: 0, max: 360 },
+      scale: { min: 0.8, max: 1.9 },
+      alpha: { start: 1, end: 0.2 },
+      tint: [tint, lighten(tint, 0.4), darken(tint, 0.4)],
+      emitting: false,
+    }).setDepth(DEPTH.FX);
+    shards.explode(20);
+
+    const dust = this.add.particles(x, y, 'particle', {
+      speed: { min: 40, max: 190 }, angle: { min: 0, max: 360 },
+      lifespan: 520, scale: { start: 1.1, end: 0 }, alpha: { start: 0.7, end: 0 },
+      tint: lighten(tint, 0.6), blendMode: 'ADD', emitting: false,
+    }).setDepth(DEPTH.FX);
+    dust.explode(12);
+
+    this.time.delayedCall(1000, () => { shards.destroy(); dust.destroy(); });
   }
 
   update(time, delta) {
@@ -144,6 +246,7 @@ export class GameScene extends Phaser.Scene {
     this.ptrJust = false;
 
     this.player.update(held, just, delta / 1000);
+    if (this.player.mode !== this.trailMode) this.applyModeVisuals(this.player.mode);
 
     const b = this.player.sprite.body;
 
@@ -246,11 +349,12 @@ export class GameScene extends Phaser.Scene {
       storage.recordProgress(this.playerId, this.levelId, this.bestPct);
     }
     const s = this.player.sprite;
-    this.burst(s.x, s.y, 26);
+    if (this.trail) this.trail.stop();
+    this.shatter(s.x, s.y);
     s.setVisible(false);
     s.body.stop();
     s.body.enable = false;
-    this.cameras.main.shake(140, 0.008);
+    this.cameras.main.shake(180, 0.011);
     this.time.delayedCall(DEATH_RESPAWN_MS, () => this.respawn());
   }
 
@@ -261,6 +365,7 @@ export class GameScene extends Phaser.Scene {
     this.player.applySnapshot(this.snapshot);
     this.currentTunnel = null;
     this.dead = false;
+    this.applyModeVisuals(this.player.mode);   // the checkpoint may be in another section
   }
 
   complete() {
@@ -274,6 +379,7 @@ export class GameScene extends Phaser.Scene {
       newBest = storage.recordComplete(this.playerId, this.levelId, timeMs, this.attempt);
     }
     const s = this.player.sprite;
+    if (this.trail) this.trail.stop();
     s.body.stop();
     s.body.enable = false;
     for (let i = 0; i < 3; i++) {

@@ -44,23 +44,44 @@ export function generateAll(scene) {
   g.fillTriangle(14, 20, TRI.SIZE - 24, TRI.SIZE / 2, 14, TRI.SIZE - 20);
   g.generateTexture('tri', TRI.SIZE, TRI.SIZE);
 
-  // --- block (dark tile with pale border, tiles cleanly) ---
+  // --- block (greyscale so the level palette tints it; tiles cleanly) ---
+  // Mid-grey body + white border: tint multiplies, so the border lands at the
+  // full accent while the body stays a darker version of the same colour.
+  // The body stays dark so a tinted block reads as solid terrain; the white
+  // border takes the accent at full strength and does the shape-defining.
   g.clear();
-  g.fillStyle(0x2e2e4a, 1);
+  g.fillStyle(0x53536a, 1);
   g.fillRect(0, 0, CELL, CELL);
-  g.lineStyle(3, 0x9aa2c8, 1);
+  g.fillStyle(0x3d3d50, 1);
+  g.fillRect(0, CELL - 10, CELL, 10);          // shaded bottom edge, adds depth
+  g.lineStyle(3, 0xffffff, 1);
   g.strokeRect(1.5, 1.5, CELL - 3, CELL - 3);
-  g.lineStyle(1, 0x565a80, 1);
+  g.lineStyle(1, 0xc0c0d8, 0.5);
   g.strokeRect(8, 8, CELL - 16, CELL - 16);
   g.generateTexture('block', CELL, CELL);
 
   // --- spike (up; down-spikes use setFlipY) ---
+  // Near-white body keeps hazards the brightest thing on screen in any palette.
   g.clear();
-  g.fillStyle(0xd8dcee, 1);
+  g.fillStyle(0xffffff, 1);
   g.fillTriangle(2, CELL, CELL / 2, 4, CELL - 2, CELL);
-  g.fillStyle(0x51557a, 1);
+  g.fillStyle(0x5a5a70, 1);
   g.fillTriangle(14, CELL, CELL / 2, 22, CELL - 14, CELL);
   g.generateTexture('spike', CELL, CELL);
+
+  // --- shard (death debris: a chunk of cube with a shaded corner) ---
+  g.clear();
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(0, 0, 14, 14);
+  g.fillStyle(0x000000, 0.28);
+  g.fillTriangle(0, 14, 14, 14, 14, 0);
+  g.generateTexture('shard', 14, 14);
+
+  // --- shockwave ring (expands out of a death) ---
+  g.clear();
+  g.lineStyle(6, 0xffffff, 1);
+  g.strokeCircle(48, 48, 42);
+  g.generateTexture('ring', 96, 96);
 
   // --- portal ring (white, tinted per mode) ---
   g.clear();
@@ -105,21 +126,21 @@ export function generateAll(scene) {
   g.fillRect(0, 0, 8, 8);
   g.generateTexture('particle', 8, 8);
 
-  // --- ground tile ---
+  // --- ground tile (greyscale; tinted per level) ---
   g.clear();
-  g.fillStyle(0x1c1c34, 1);
+  g.fillStyle(0xa0a0b8, 1);
   g.fillRect(0, 0, CELL, CELL);
-  g.fillStyle(0x272747, 1);
+  g.fillStyle(0xe0e0f0, 1);
   g.fillRect(0, 0, CELL, 4);
-  g.lineStyle(1, 0x323258, 1);
+  g.lineStyle(1, 0xc8c8dc, 1);
   g.strokeRect(0.5, 0.5, CELL - 1, CELL - 1);
   g.generateTexture('ground', CELL, CELL);
 
-  // --- background deco (faint outlined square for parallax layers) ---
+  // --- background deco (outlined square for the parallax layers) ---
   g.clear();
-  g.lineStyle(2, 0xffffff, 0.05);
+  g.lineStyle(2, 0xffffff, 0.13);
   g.strokeRect(16, 16, 96, 96);
-  g.lineStyle(1, 0xffffff, 0.03);
+  g.lineStyle(1, 0xffffff, 0.07);
   g.strokeRect(40, 40, 48, 48);
   g.generateTexture('deco', 128, 128);
 
