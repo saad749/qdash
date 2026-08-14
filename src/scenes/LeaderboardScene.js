@@ -2,7 +2,8 @@
 
 import { GAME_W, COLORS } from '../constants.js';
 import { storage, fmtTime } from '../storage.js';
-import { LEVELS, LEVEL_IDS } from '../levels/index.js';
+import { LEVELS } from '../levels/index.js';
+import { SEASONS, RELEASED_SEASONS, seasonOf } from '../seasons.js';
 import { makeTitle, makeText, makeButton, attachAudioUnlock, FONT } from '../ui.js';
 
 export class LeaderboardScene extends Phaser.Scene {
@@ -14,21 +15,29 @@ export class LeaderboardScene extends Phaser.Scene {
 
   create() {
     attachAudioUnlock(this);
-    makeTitle(this, GAME_W / 2, 60, 'LEADERBOARD', 48);
+    makeTitle(this, GAME_W / 2, 52, 'LEADERBOARD', 44);
 
-    // level tabs
-    LEVEL_IDS.forEach((id, i) => {
-      const x = GAME_W / 2 + (i - 2) * 130;
+    // one board per level, so the tabs are per season rather than 10 across
+    const season = seasonOf(this.levelId) || SEASONS[0];
+    RELEASED_SEASONS.forEach((s, i) => {
+      const x = GAME_W / 2 + (i - (RELEASED_SEASONS.length - 1) / 2) * 280;
+      makeButton(this, x, 106, `Season ${s.id}`, () => this.scene.restart({ levelId: s.levelIds[0] }), {
+        w: 250, h: 40, size: 18, color: s.id === season.id ? 0x3d6b46 : 0x2b2b4a,
+      });
+    });
+
+    season.levelIds.forEach((id, i) => {
+      const x = GAME_W / 2 + (i - (season.levelIds.length - 1) / 2) * 130;
       const active = id === this.levelId;
-      makeButton(this, x, 130, `${id}`, () => this.scene.restart({ levelId: id }), {
+      makeButton(this, x, 164, `${id}`, () => this.scene.restart({ levelId: id }), {
         w: 110, h: 44, size: 22, color: active ? 0x3d6b46 : 0x2b2b4a,
       });
     });
-    makeText(this, GAME_W / 2, 180, LEVELS[this.levelId].name, 26, '#fed330');
+    makeText(this, GAME_W / 2, 210, LEVELS[this.levelId].name, 24, '#fed330');
 
     const rows = storage.leaderboard(this.levelId);
     const current = storage.current();
-    const y0 = 240, rowH = 46;
+    const y0 = 268, rowH = 46;
 
     const header = (x, t, align = 0.5) => this.add.text(x, y0 - 34, t, {
       fontFamily: FONT, fontSize: '16px', color: '#8890c8',

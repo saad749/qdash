@@ -4,6 +4,7 @@ import { GAME_W, GAME_H } from './constants.js';
 import { BootScene } from './scenes/BootScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { PlayerScene } from './scenes/PlayerScene.js';
+import { SeasonSelectScene } from './scenes/SeasonSelectScene.js';
 import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { HudScene } from './scenes/HudScene.js';
@@ -26,7 +27,7 @@ const game = new Phaser.Game({
   },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [
-    BootScene, MenuScene, PlayerScene, LevelSelectScene,
+    BootScene, MenuScene, PlayerScene, SeasonSelectScene, LevelSelectScene,
     GameScene, HudScene, PauseScene, LevelCompleteScene, LeaderboardScene,
   ],
 });

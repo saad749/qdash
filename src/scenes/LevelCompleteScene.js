@@ -4,6 +4,7 @@ import { GAME_W, GAME_H } from '../constants.js';
 import { makePanel, makeTitle, makeText, makeButton } from '../ui.js';
 import { fmtTime } from '../storage.js';
 import { LEVELS } from '../levels/index.js';
+import { nextLevelId } from '../seasons.js';
 
 export class LevelCompleteScene extends Phaser.Scene {
   constructor() { super('LevelComplete'); }
@@ -29,10 +30,11 @@ export class LevelCompleteScene extends Phaser.Scene {
       this.scene.stop('Game');
     };
 
-    if (LEVELS[levelId + 1]) {
+    const next = nextLevelId(levelId);      // null on a season finale
+    if (next) {
       makeButton(this, cx, cy + 45, 'Next Level', () => {
         stopGame();
-        this.scene.start('Game', { levelId: levelId + 1 });
+        this.scene.start('Game', { levelId: next });
       });
     }
     makeButton(this, cx, cy + 110, 'Replay', () => {
