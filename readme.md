@@ -1,4 +1,4 @@
-# QGeometry Dash
+# QDash
 
 A local Geometry Dash-style auto-runner built with Phaser 3. No build step, no
 backend, no accounts — everything (players, colors, leaderboards) is stored in
@@ -7,7 +7,7 @@ your browser's localStorage.
 ## Run
 
 ```
-cd D:\projects\Qgeometry_dash
+cd D:\projects\qdash
 python -m http.server 8080        # or: npx serve -l 8080
 ```
 

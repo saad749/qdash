@@ -2,7 +2,9 @@
 
 import { DEFAULT_COLOR, COLORS } from './constants.js';
 
-const KEY = 'qgd.save.v1';
+const KEY = 'qdash.save.v1';
+// Saves written before the QDash rename. Read once, then re-saved under KEY; never written.
+const LEGACY_KEY = 'qgd.save.v1';
 
 function freshSave() {
   return { version: 1, currentPlayerId: null, players: {}, records: {} };
@@ -19,11 +21,14 @@ class Storage {
   constructor() {
     this.data = freshSave();
     try {
-      const raw = localStorage.getItem(KEY);
+      let raw = localStorage.getItem(KEY);
+      const legacy = raw === null;
+      if (legacy) raw = localStorage.getItem(LEGACY_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.version === 1 && parsed.players && parsed.records) {
           this.data = parsed;
+          if (legacy) this.save();
         }
       }
     } catch (e) {

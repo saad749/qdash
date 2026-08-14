@@ -1,13 +1,14 @@
-# QGeometry Dash — Session Handoff Notes
+# QDash — Session Handoff Notes
 
 Compressed history and state of the project, for resuming work in a fresh
-Claude Code session. Last updated: 2026-08-08.
+Claude Code session. Last updated: 2026-08-14.
 
 ## What this is
 
 A local Geometry Dash-style auto-runner. **Phaser 3.90.0 vendored** at
 `lib/phaser.min.js` (global script) + plain ES modules — **no build step, no
-dependencies, no backend**. All persistence in localStorage key `qgd.save.v1`.
+dependencies, no backend**. All persistence in localStorage key `qdash.save.v1`
+(blobs written before the QDash rename are read once from `qgd.save.v1`).
 All art generated from Phaser Graphics at boot; all audio (per-level chiptune +
 SFX) synthesized with Web Audio — zero asset files, nothing copyrighted.
 
@@ -45,7 +46,7 @@ Run: `python -m http.server 8080` in the project root → http://localhost:8080
 - `levels/` — helpers.js (block/spike/portal/tunnel/pad/... builders), level1-5.js,
   test.js (sandbox), index.js. Grid coords: x cells from start, y rows above ground.
 - `scenes/` — Boot, Menu, PlayerSelect, LevelSelect, Game (core loop), Hud
-  (parallel overlay via game-events qgd:*), Pause, LevelComplete, Leaderboard.
+  (parallel overlay via game-events qdash:*), Pause, LevelComplete, Leaderboard.
 
 Physics: Arcade, `fixedStep:true, fps:60`, world gravity 0, per-body gravity.
 Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)

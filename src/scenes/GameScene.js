@@ -177,7 +177,7 @@ export class GameScene extends Phaser.Scene {
     this.bestPct = Math.max(this.bestPct, pct);
     if (pct !== this.lastPct) {
       this.lastPct = pct;
-      this.game.events.emit('qgd:progress', pct);
+      this.game.events.emit('qdash:progress', pct);
     }
     if (this.player.sprite.x >= this.built.finishX) this.complete();
   }
@@ -234,7 +234,7 @@ export class GameScene extends Phaser.Scene {
     c.flag.setTint(0x2eff8a);
     this.tweens.add({ targets: c.flag, scale: 1.35, duration: 130, yoyo: true });
     sfx.checkpoint();
-    this.game.events.emit('qgd:checkpoint', c.index + 1);
+    this.game.events.emit('qdash:checkpoint', c.index + 1);
   }
 
   die() {
@@ -257,7 +257,7 @@ export class GameScene extends Phaser.Scene {
   respawn() {
     if (this.finished) return;
     this.attempt += 1;
-    this.game.events.emit('qgd:attempt', this.attempt);
+    this.game.events.emit('qdash:attempt', this.attempt);
     this.player.applySnapshot(this.snapshot);
     this.currentTunnel = null;
     this.dead = false;
