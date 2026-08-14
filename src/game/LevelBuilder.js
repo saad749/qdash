@@ -3,8 +3,18 @@
 
 import { CELL, GROUND_Y, GAME_H, SPIKE_HIT, DEPTH, PORTAL_TINT, gx, gy } from '../constants.js';
 import { Tunnel } from './Tunnel.js';
+import { paletteFor } from '../palette.js';
 
-export function buildLevel(scene, level) {
+export function buildLevel(scene, level, palette = paletteFor(level.id)) {
+  // Obstacles take the colour of the mode section they stand in, so the world
+  // changes palette at every portal.
+  const portalsByX = level.objects.filter(o => o.t === 'portal').sort((a, b) => a.x - b.x);
+  const modeAt = (x) => {
+    let mode = 'cube';
+    for (const p of portalsByX) if (p.x <= x) mode = p.mode;
+    return mode;
+  };
+
   const blocks = scene.physics.add.staticGroup();
   const hazards = scene.physics.add.staticGroup();
   const portals = [];
@@ -25,13 +35,14 @@ export function buildLevel(scene, level) {
         const w = (o.w || 1) * CELL, h = (o.h || 1) * CELL;
         const ts = scene.add.tileSprite(
           o.x * CELL + w / 2, GROUND_Y - o.y * CELL - h / 2, w, h, 'block'
-        ).setDepth(DEPTH.BLOCK);
+        ).setDepth(DEPTH.BLOCK).setTint(palette.modes[modeAt(o.x)].block);
         blocks.add(ts);
         break;
       }
       case 'spike':
       case 'spikeDown': {
-        const img = scene.add.image(gx(o.x), gy(o.y), 'spike').setDepth(DEPTH.HAZARD);
+        const img = scene.add.image(gx(o.x), gy(o.y), 'spike')
+          .setDepth(DEPTH.HAZARD).setTint(palette.modes[modeAt(o.x)].spike);
         if (o.t === 'spikeDown') img.setFlipY(true);
         hazards.add(img);
         img.body.setSize(SPIKE_HIT.W, SPIKE_HIT.H, true);
@@ -100,7 +111,7 @@ export function buildLevel(scene, level) {
   const tunnelObjs = tunnels.map(segs => {
     const x0 = segs[0].x, x1 = segs[segs.length - 1].x + segs[segs.length - 1].len;
     const own = tspikes.filter(t => t.x >= x0 && t.x < x1);
-    return new Tunnel(scene, segs, own);
+    return new Tunnel(scene, segs, own, palette.neon);
   });
 
   // Checkpoints get indices in level order; count is validated (5 predefined).
@@ -114,6 +125,6 @@ export function buildLevel(scene, level) {
     blocks, hazards, portals, pads, checkpoints,
     tunnels: tunnelObjs,
     finishX: finishCellX * CELL,
-    finishZone, pole, worldW,
+    finishZone, pole, worldW, palette,
   };
 }

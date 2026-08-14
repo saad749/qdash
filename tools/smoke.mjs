@@ -33,7 +33,7 @@ const modules = [
   '../src/audio/engine.js', '../src/audio/sfx.js', '../src/audio/music.js', '../src/audio/songs.js',
   '../src/game/textures.js', '../src/game/Player.js', '../src/game/Tunnel.js', '../src/game/LevelBuilder.js',
   '../src/levels/helpers.js', '../src/levels/index.js',
-  '../src/seasons.js',
+  '../src/seasons.js', '../src/palette.js',
   '../src/scenes/BootScene.js', '../src/scenes/MenuScene.js', '../src/scenes/PlayerScene.js',
   '../src/scenes/SeasonSelectScene.js',
   '../src/scenes/LevelSelectScene.js', '../src/scenes/GameScene.js', '../src/scenes/HudScene.js',
@@ -277,6 +277,63 @@ for (const [key, s] of Object.entries(SONGS)) {
   if (!Array.isArray(s.scale) || !s.scale.length) fail(`${key}: bad scale`);
 }
 ok('every song spec is 16 steps per pattern with a sane bpm');
+
+// --- palette + textures ---
+const { paletteFor, MODE_KEYS, lighten, darken } = await import(new URL('../src/palette.js', import.meta.url));
+const hex24 = (v) => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
+const luma = (c) => 0.299 * ((c >> 16) & 0xff) + 0.587 * ((c >> 8) & 0xff) + 0.114 * (c & 0xff);
+
+for (const id of [...LEVEL_IDS, 'test']) {
+  const pal = paletteFor(id);
+  for (const key of ['ground', 'deco', 'neon']) {
+    if (!hex24(pal[key])) fail(`palette ${id}: ${key} is not a 24-bit colour (${pal[key]})`);
+  }
+  for (const mode of MODE_KEYS) {
+    const m = pal.modes[mode];
+    if (!m) { fail(`palette ${id}: missing mode ${mode}`); continue; }
+    for (const key of ['accent', 'block', 'spike', 'backdrop']) {
+      if (!hex24(m[key])) fail(`palette ${id}.${mode}: ${key} is not a 24-bit colour (${m[key]})`);
+    }
+    // A hazard must never be darker than the terrain it sits on, in any palette.
+    if (luma(m.spike) <= luma(m.block)) {
+      fail(`palette ${id}.${mode}: spike is not lighter than block`);
+    }
+    if (luma(m.backdrop) >= luma(m.accent)) {
+      fail(`palette ${id}.${mode}: backdrop should be darker than the accent`);
+    }
+  }
+}
+// distinct sections are the whole point — a level whose three modes look the same fails
+for (const id of LEVEL_IDS) {
+  const accents = MODE_KEYS.map(m => paletteFor(id).modes[m].accent);
+  if (new Set(accents).size !== accents.length) fail(`palette ${id}: modes share an accent`);
+}
+ok('every level palette is well formed, readable, and distinct per mode');
+
+if (lighten(0x000000, 1) !== 0xffffff || darken(0xffffff, 1) !== 0x000000) {
+  fail('lighten/darken endpoints are wrong');
+} else if (lighten(0x808080, 0) !== 0x808080) {
+  fail('lighten with t=0 should be a no-op');
+} else ok('colour helpers clamp to their endpoints');
+
+// Texture keys used by the game must exist in the generator — a typo here is an
+// invisible sprite at runtime, which no other check would catch.
+const { readFileSync: readSrc, readdirSync } = await import('node:fs');
+const srcDir = new URL('../src/', import.meta.url);
+const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+  e.isDirectory() ? walk(new URL(`${e.name}/`, dir)) : [new URL(e.name, dir)]);
+const srcFiles = walk(srcDir).filter(u => u.pathname.endsWith('.js'));
+const texSrc = readSrc(new URL('../src/game/textures.js', import.meta.url), 'utf8');
+const generated = new Set([...texSrc.matchAll(/generateTexture\('([\w-]+)'/g)].map(m => m[1]));
+if (generated.size < 10) fail(`only found ${generated.size} generated textures — regex out of date?`);
+const TEX_CALL = /(?:add\.(?:image|sprite|tileSprite|particles)\([^'"]*|setTexture\()['"]([\w-]+)['"]/g;
+const used = new Set();
+for (const file of srcFiles) {
+  for (const m of readSrc(file, 'utf8').matchAll(TEX_CALL)) used.add(m[1]);
+}
+const missing = [...used].filter(k => !generated.has(k));
+if (missing.length) fail(`textures used but never generated: ${missing.join(', ')}`);
+else ok(`all ${used.size} texture keys used in src/ are generated at boot`);
 
 // --- storage logic ---
 const { storage } = await import(new URL('../src/storage.js', import.meta.url));

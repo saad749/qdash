@@ -7,8 +7,10 @@ import { CELL, GROUND_Y, GAME_H, TRI, SPIKE_HIT, DEPTH } from '../constants.js';
 const NEON = 0x34e7e4;
 
 export class Tunnel {
-  // segs: contiguous [{x, len, floor, ceil}] in grid cells; tspikes: [{x, side}]
-  constructor(scene, segs, tspikes) {
+  // segs: contiguous [{x, len, floor, ceil}] in grid cells; tspikes: [{x, side}];
+  // neon: the level palette's triangle accent, so corridors match their section.
+  constructor(scene, segs, tspikes, neon = NEON) {
+    this.neon = neon;
     this.segs = segs.map(s => ({
       x0: s.x * CELL,
       x1: (s.x + s.len) * CELL,
@@ -80,7 +82,7 @@ export class Tunnel {
     }
 
     // Neon corridor edges, with vertical connectors at every zig.
-    g.lineStyle(4, NEON, 1);
+    g.lineStyle(4, this.neon, 1);
     let prev = null;
     for (const s of this.segs) {
       g.lineBetween(s.x0, s.floorY, s.x1, s.floorY);
@@ -93,7 +95,7 @@ export class Tunnel {
     }
 
     // Spikes pointing into the corridor.
-    g.fillStyle(NEON, 1);
+    g.fillStyle(this.neon, 1);
     for (const s of this.spikeRects) {
       const half = CELL * 0.35;
       if (s.side === 'ceil') {
