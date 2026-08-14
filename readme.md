@@ -41,10 +41,12 @@ and narrow tunnels with rapid forced flips.
 
 ## Players, colors, leaderboards
 
-Create any number of local players (Menu → Players & Colors), pick who's
-playing, and choose a character color: purple, **green** (default), blue, red,
-pink, orange, or yellow. The per-level leaderboard ranks completed runs by best
-time first, then partial runs by best progress.
+On a fresh install, **Play** creates a throwaway `Player####` profile and starts
+level 1 immediately — no setup screen. Otherwise create any number of local
+players (Menu → Players & Colors), pick who's playing, and choose a character
+color: purple, **green** (default), blue, red, pink, orange, or yellow. The
+per-level leaderboard ranks completed runs by best time first, then partial runs
+by best progress.
 
 ## Project status
 

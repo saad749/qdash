@@ -29,6 +29,10 @@ Run: `python -m http.server 8080` in the project root → http://localhost:8080
 - 7 character colors (green default), per-player, applied by tinting white textures.
 - Local player profiles (create/select/delete) + per-level leaderboards:
   completed runs by best time, then partials by best %, ties by attempts.
+- **Play with no profiles yet** auto-creates `Player####` and starts level 1
+  instantly (`MenuScene.startPlay` → `storage.createRandomPlayer`). If profiles exist
+  but none is current, Play still opens the picker — otherwise every Play tap
+  after deleting the current player would spawn another junk profile.
 - Synthesized music: lookahead step-sequencer (`src/audio/music.js`), one
   4-bar spec per level in `songs.js` (126→148 BPM); music survives deaths.
 
