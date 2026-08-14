@@ -55,13 +55,13 @@ export class HudScene extends Phaser.Scene {
       this.cpText.setText(`Checkpoint ${n}/5`);
     };
 
-    this.game.events.on('qgd:progress', this.onProgress);
-    this.game.events.on('qgd:attempt', this.onAttempt);
-    this.game.events.on('qgd:checkpoint', this.onCheckpoint);
+    this.game.events.on('qdash:progress', this.onProgress);
+    this.game.events.on('qdash:attempt', this.onAttempt);
+    this.game.events.on('qdash:checkpoint', this.onCheckpoint);
     this.events.once('shutdown', () => {
-      this.game.events.off('qgd:progress', this.onProgress);
-      this.game.events.off('qgd:attempt', this.onAttempt);
-      this.game.events.off('qgd:checkpoint', this.onCheckpoint);
+      this.game.events.off('qdash:progress', this.onProgress);
+      this.game.events.off('qdash:attempt', this.onAttempt);
+      this.game.events.off('qdash:checkpoint', this.onCheckpoint);
     });
   }
 }

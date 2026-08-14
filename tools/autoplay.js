@@ -99,7 +99,7 @@
       detach() {
         B.enabled = false;
         sc.events.off('update', onFrame);
-        game.events.off('qgd:checkpoint', onCp);
+        game.events.off('qdash:checkpoint', onCp);
         if (origDie) sc.die = origDie;
         if (origComplete) sc.complete = origComplete;
       },
@@ -127,7 +127,7 @@
       if (!was && sc.finished) log({ t: 'complete', attempts: sc.attempt });
     };
     const onCp = (n) => log({ t: 'checkpoint', n });
-    game.events.on('qgd:checkpoint', onCp);
+    game.events.on('qdash:checkpoint', onCp);
 
     // ---- cube lookahead sim ----
     const nextTrunc = (x) => {

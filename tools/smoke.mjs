@@ -167,8 +167,28 @@ if (storage.current().name !== 'Cara') fail('current player should be most recen
 storage.deletePlayer(c);
 if (storage.current() !== null) fail('deleting current player should clear selection');
 else ok('player delete cascades and clears current');
-const raw = JSON.parse(store.get('qgd.save.v1'));
+const raw = JSON.parse(store.get('qdash.save.v1'));
 if (raw.players[c] || raw.records[c]) fail('deleted player left data behind');
+
+// Saves written before the QDash rename must survive: fresh Storage falls back
+// to the legacy key, then re-saves under the new one. Query string forces a
+// second module instance so the constructor runs again.
+store.clear();
+store.set('qgd.save.v1', JSON.stringify({
+  version: 1,
+  currentPlayerId: 'p_old',
+  players: { p_old: { name: 'Legacy', color: 'blue', createdAt: 1 } },
+  records: { p_old: { 1: { bestPercent: 100, completed: true, bestTimeMs: 70000, bestRunAttempts: 3, attemptsTotal: 9, lastPlayed: 1 } } },
+}));
+const { storage: migrated } = await import(new URL('../src/storage.js?rename', import.meta.url));
+const legacyPlayer = migrated.current();
+if (!legacyPlayer || legacyPlayer.name !== 'Legacy') {
+  fail('pre-rename save under qgd.save.v1 was not loaded');
+} else if (!store.has('qdash.save.v1')) {
+  fail('pre-rename save was loaded but not re-saved under qdash.save.v1');
+} else if (migrated.leaderboard(1)[0].bestTimeMs !== 70000) {
+  fail('pre-rename records lost in migration');
+} else ok('pre-rename save migrates from qgd.save.v1 to qdash.save.v1');
 
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nSMOKE TEST PASSED');
 process.exit(failures ? 1 : 0);
