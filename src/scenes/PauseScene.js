@@ -4,6 +4,7 @@ import { GAME_W, GAME_H } from '../constants.js';
 import { makePanel, makeTitle, makeButton } from '../ui.js';
 import { resume as audioResume } from '../audio/engine.js';
 import { music } from '../audio/music.js';
+import { seasonOf } from '../seasons.js';
 
 export class PauseScene extends Phaser.Scene {
   constructor() { super('Pause'); }
@@ -31,7 +32,9 @@ export class PauseScene extends Phaser.Scene {
       audioResume();
       this.scene.stop('Hud');
       this.scene.stop('Game');
-      this.scene.start('LevelSelect');   // start() also shuts this overlay down
+      // back to the season you were playing, not season 1
+      const season = seasonOf(this.levelId);
+      this.scene.start('LevelSelect', { seasonId: season ? season.id : undefined });
     });
 
     this.input.keyboard.on('keydown-ESC', () => this.resumeGame());

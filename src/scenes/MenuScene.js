@@ -45,7 +45,7 @@ export class MenuScene extends Phaser.Scene {
   // selected still go through the picker, so Play can't pile up junk profiles.
   startPlay() {
     if (storage.current()) {
-      this.scene.start('LevelSelect');
+      this.scene.start('SeasonSelect');
     } else if (storage.playerList().length === 0) {
       storage.createRandomPlayer();
       this.scene.start('Game', { levelId: LEVEL_IDS[0] });

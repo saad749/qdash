@@ -1,0 +1,120 @@
+// Level 9 — A Hero Arises. The climb back out: launch-pad ascents onto stepped
+// platform chains that keep rising, the one bright level in the season. Hazards
+// are mostly below you, so falling costs the run rather than a spike does. ~110 s.
+
+import {
+  block, spike, spikes, spikeDown, portal, checkpoint,
+  tunnel, tspike, finish, ceiling, pad, stairs,
+} from './helpers.js';
+
+export default {
+  id: 9,
+  name: 'A Hero Arises',
+  lengthCells: 960,
+  song: 'song9',
+  bg: { hue: 0xddaa33 },
+  objects: [
+    // --- cube opener (0–130): first steps up ---
+    spike(16),
+    ...spikes(26, 0, 2),
+    block(36, 0, 2, 1), spike(40),
+    ...spikes(50, 0, 2),
+    ...stairs(60, 3, 3),
+    ...spikes(78, 0, 2),
+    spike(90),
+    block(98, 0, 1, 1),
+    ...spikes(108, 0, 2),
+    spike(120),
+
+    // --- the ascent (135–250): three pad climbs, each higher ---
+    checkpoint(144),
+    pad(150),
+    block(153, 1, 2, 1), ...spikes(155, 0, 2), block(157, 2, 2, 1),
+    ...spikes(168, 0, 2),
+    pad(178),
+    block(181, 1, 3, 1), block(185, 2, 3, 1), block(189, 3, 3, 1),
+    ...spikes(202, 0, 2),
+    spike(214),
+    pad(222),
+    block(225, 1, 2, 1), ...spikes(227, 0, 2), block(229, 2, 2, 1),
+    ...spikes(240, 0, 3),
+
+    // --- cube run (255–310) ---
+    ...spikes(258, 0, 2),
+    spike(270),
+    ...spikes(280, 0, 3),
+    spike(292),
+    checkpoint(306),
+
+    // --- tunnel (315–430): steady, wide enough to keep the momentum ---
+    portal(316, 'triangle', 0, 1, 4),
+    tunnel(315, 15, 1, 5),
+    tunnel(330, 10, 2, 6),
+    tspike(335, 'floor'),
+    tunnel(340, 10, 1, 5),
+    tspike(345, 'ceil'),
+    tunnel(350, 10, 3, 7),
+    tspike(355, 'floor'),
+    tunnel(360, 10, 1, 5),
+    tunnel(370, 12, 2, 6),
+    tspike(376, 'ceil'),
+    tunnel(382, 12, 1, 5),
+    tspike(388, 'floor'),
+    tunnel(394, 12, 2, 6),
+    tunnel(406, 24, 1, 5),
+    portal(422, 'cube', 1, 1, 4),
+
+    // --- ship corridor (435–545) ---
+    portal(435, 'ship'),
+    ceiling(439, 106, 5),
+    block(449, 0, 1, 2),
+    spikeDown(459, 4),
+    block(469, 3, 2, 2),
+    spike(479),
+    checkpoint(486),
+    block(494, 0, 2, 2),
+    spikeDown(504, 4),
+    block(514, 3, 2, 2),
+    spike(524),
+    block(532, 0, 1, 2),
+    portal(540, 'cube', 0, 1, 5),
+
+    // --- cube midsection (550–700) ---
+    ...spikes(556, 0, 2),
+    spike(568),
+    ...spikes(578, 0, 3),
+    block(590, 0, 4, 1), ...spikes(594, 0, 2), block(596, 1, 4, 1),
+    ...spikes(608, 0, 2),
+    spike(620),
+    ...spikes(630, 0, 3),
+    checkpoint(643),
+    pad(652),
+    block(655, 1, 2, 1), ...spikes(657, 0, 2), block(659, 2, 2, 1),
+    ...spikes(670, 0, 2),
+    spike(682),
+    block(690, 0, 1, 1),
+
+    // --- the hero's ascent (705–960) ---
+    ...spikes(710, 0, 2),
+    spike(722),
+    ...spikes(732, 0, 3),
+    spike(744),
+    pad(752),
+    block(755, 1, 3, 1), block(759, 2, 3, 1), block(763, 3, 3, 1),
+    ...spikes(776, 0, 2),
+    spike(788),
+    ...spikes(798, 0, 3),
+    spike(810),
+    checkpoint(816),
+    ...spikes(824, 0, 2),
+    spike(836),
+    ...stairs(846, 3, 3),
+    ...spikes(866, 0, 2),
+    spike(878),
+    ...spikes(888, 0, 3),
+    spike(900),
+    ...spikes(910, 0, 2),
+    spike(922),
+    finish(946),
+  ],
+};

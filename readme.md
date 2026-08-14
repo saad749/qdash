@@ -28,7 +28,9 @@ ES modules don't load from `file://`.)
 - Each level has **5 checkpoints** (~15/33/50/67/85%). Dying respawns you at the
   last one reached with your form and gravity restored.
 
-## Levels
+## Seasons
+
+**Season 1 — The Tumble Wvrumbles** · released 8 Aug 2026
 
 1. **Stereo Madness** — the classic opener
 2. **Finally Out**
@@ -36,8 +38,19 @@ ES modules don't load from `file://`.)
 4. **Out Lost**
 5. **Back on Track**
 
-Difficulty ramps up: later levels bring triple spikes, tighter ship corridors,
-and narrow tunnels with rapid forced flips.
+**Season 2 — The Dark Awakens** · released 14 Aug 2026
+
+6. **The Growl Loses Power** — the beast fades: crumbling steps, a dying-ember sky
+7. **The Darks Starts to Spread** — corridors that keep narrowing, 5 → 4 → 3 wide
+8. **The Moons Turns Black** — the ship-heaviest level, two long night corridors
+9. **A Hero Arises** — launch-pad ascents onto rising platform chains
+10. **The Twisted Warden Falls** — the boss: the longest level, every mechanic at once
+
+**Season 3** — coming soon.
+
+Difficulty ramps up inside each season: later levels bring triple spikes, tighter
+ship corridors, and narrow tunnels with rapid forced flips. Season 2 opens around
+level 4's difficulty and ends harder than anything in season 1.
 
 ## Players, colors, leaderboards
 
@@ -50,9 +63,9 @@ by best progress.
 
 ## Project status
 
-Feature-complete: 5 levels, 3 modes (cube / ship / triangle), launch pads,
-checkpoints, player profiles with 7 colors, local leaderboards, synthesized
-music. Two playtest bugs fixed: unreachable platforms (solved with launch pads +
+Feature-complete: 10 levels across 2 released seasons, 3 modes (cube / ship /
+triangle), launch pads, checkpoints, player profiles with 7 colors, local
+leaderboards, synthesized music. Two playtest bugs fixed: unreachable platforms (solved with launch pads +
 an automated reachability check) and a ship→cube portal clip-through (solved by
 preserving the hitbox's bottom edge across mode switches + an under-ground
 failsafe). Full development history and architecture notes: **notes.md**.

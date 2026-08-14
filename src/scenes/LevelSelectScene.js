@@ -2,12 +2,17 @@
 
 import { GAME_W, COLORS } from '../constants.js';
 import { storage, fmtTime } from '../storage.js';
-import { LEVELS, LEVEL_IDS } from '../levels/index.js';
+import { LEVELS } from '../levels/index.js';
+import { SEASONS, seasonById } from '../seasons.js';
 import { makeTitle, makeText, attachAudioUnlock, makeButton, FONT } from '../ui.js';
 import { sfx } from '../audio/sfx.js';
 
 export class LevelSelectScene extends Phaser.Scene {
   constructor() { super('LevelSelect'); }
+
+  init(data) {
+    this.seasonId = (data && data.seasonId) || SEASONS[0].id;
+  }
 
   create() {
     attachAudioUnlock(this);
@@ -16,16 +21,19 @@ export class LevelSelectScene extends Phaser.Scene {
       this.scene.start('PlayerSelect');
       return;
     }
+    const season = seasonById(this.seasonId) || SEASONS[0];
+    const levelIds = season.levelIds;
 
-    makeTitle(this, GAME_W / 2, 60, 'SELECT LEVEL', 48);
-    this.add.image(GAME_W / 2 - 200, 120, 'cube').setTint(COLORS[profile.color]).setScale(0.5);
-    makeText(this, GAME_W / 2 + 10, 120, `Playing as  ${profile.name}`, 22, '#ffffff');
+    makeTitle(this, GAME_W / 2, 52, 'SELECT LEVEL', 44);
+    makeText(this, GAME_W / 2, 94, `Season ${season.id} — ${season.name}`, 22, '#fed330');
+    this.add.image(GAME_W / 2 - 200, 134, 'cube').setTint(COLORS[profile.color]).setScale(0.5);
+    makeText(this, GAME_W / 2 + 10, 134, `Playing as  ${profile.name}`, 22, '#ffffff');
 
     const cardW = 224, cardH = 380, gap = 20;
-    const total = LEVEL_IDS.length * cardW + (LEVEL_IDS.length - 1) * gap;
+    const total = levelIds.length * cardW + (levelIds.length - 1) * gap;
     const x0 = (GAME_W - total) / 2 + cardW / 2;
 
-    LEVEL_IDS.forEach((id, i) => {
+    levelIds.forEach((id, i) => {
       const level = LEVELS[id];
       const rec = storage.record(profile.id, id);
       const x = x0 + i * (cardW + gap), y = 400;
@@ -66,6 +74,6 @@ export class LevelSelectScene extends Phaser.Scene {
       makeText(this, x, y + 155, 'PLAY ▶', 20, '#fed330');
     });
 
-    makeButton(this, GAME_W / 2, 660, 'Back to Menu', () => this.scene.start('Menu'));
+    makeButton(this, GAME_W / 2, 660, 'Back to Seasons', () => this.scene.start('SeasonSelect'));
   }
 }
