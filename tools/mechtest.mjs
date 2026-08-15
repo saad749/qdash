@@ -7,6 +7,12 @@
 // Exit code 0 only if every assertion holds.
 
 import { openBrowser, requireServer, sleep } from './cdp.mjs';
+import { SHIP, GROUND_Y } from '../src/constants.js';
+
+// A ship respawn starts at rest, so its height above the floor is the whole
+// reaction budget — the grace window only stops surfaces killing you, it does
+// not stop you falling onto one.
+const budgetMs = (h) => Math.sqrt(2 * Math.max(h, 0) / SHIP.GRAVITY) * 1000;
 
 const ORIGIN = process.env.QDASH_ORIGIN || 'http://localhost:8080';
 let failures = 0;
@@ -94,6 +100,63 @@ try {
     const attempt = await cdp.eval('window.game.scene.getScene("Game").attempt');
     if (attempt > 2) fail(`${label} ship respawn death-looped: ${attempt} attempts`);
     else ok(`${label} ship respawn recovers instead of looping`);
+  }
+
+  // --- an overlap sensor is not ground ---
+  // Arcade sets body.touching for overlaps as well as collisions, and the
+  // checkpoint zone is a full-height overlap zone, so reading touching.down as
+  // "landed" exploded the ship in mid-air at every flag it flew past.
+  await freshScene(4);
+  const flyby = await cdp.eval(`(() => {
+    const s = window.game.scene.getScene('Game');
+    const cp = s.built.checkpoints.find(c => c.x === 257);
+    s.player.setMode('ship');
+    s.player.sprite.body.reset(cp.zone.x - 60, 528);   // mid-corridor, clear of everything
+    return { before: s.attempt, cpIndex: s.cpIndex };
+  })()`);
+  await sleep(300);                        // long enough to cross the 32 px zone
+  const flyover = await cdp.eval(`(() => {
+    const s = window.game.scene.getScene('Game');
+    const b = s.player.sprite.body;
+    return { attempt: s.attempt, cpIndex: s.cpIndex, blockedDown: b.blocked.down,
+             aboveGround: Math.round(${GROUND_Y} - b.bottom) };
+  })()`);
+  if (flyover.cpIndex <= flyby.cpIndex) {
+    fail(`flag flyby never reached the checkpoint (cpIndex ${flyover.cpIndex}) — test is not proving anything`);
+  } else if (flyover.attempt > flyby.before) {
+    fail('the ship died flying past a checkpoint flag in open air — a sensor is being read as ground');
+  } else {
+    ok(`ship flies through a checkpoint sensor unharmed (${flyover.aboveGround}px up, cp ${flyover.cpIndex} taken)`);
+  }
+
+  // --- a ship respawn must give at least the grace window to react ---
+  // Flags sit a few cells past a dive under a roof-flush block, so they get
+  // crossed near the deck. Restoring that altitude literally is what made the
+  // ship "crash at the checkpoint": 194 ms to react, under human reaction time.
+  for (const [level, cpCell] of [[2, 561], [4, 257], [8, 782]]) {
+    await freshScene(level);
+    await cdp.eval(`(() => {
+      const s = window.game.scene.getScene('Game');
+      const cp = s.built.checkpoints.find(c => c.x === ${cpCell});
+      const oR = s.respawn.bind(s);
+      s.respawn = () => { oR(); s.__respawnH = ${GROUND_Y} - s.player.sprite.body.bottom; };
+      s.player.setMode('ship');
+      s.player.sprite.body.reset(cp.zone.x, ${GROUND_Y} - 40);  // hugging the deck
+      s.snapshot = s.player.snapshot();                         // as the flag would record it
+      s.die('test');
+      return true;
+    })()`);
+    await sleep(760);                        // just past the 700 ms respawn
+    // Sampled at respawn, not now: by the time we ask, it has already fallen a
+    // few px, and in a 4-row corridor the whole budget is only ~360 ms.
+    const h = await cdp.eval('window.game.scene.getScene("Game").__respawnH');
+    const ms = budgetMs(h);
+    if (ms < SHIP.RESPAWN_GRACE_MS) {
+      fail(`level ${level} cp ${cpCell}: respawn leaves ${ms.toFixed(0)} ms to react `
+        + `(${Math.round(h)} px up), under the ${SHIP.RESPAWN_GRACE_MS} ms grace`);
+    } else {
+      ok(`level ${level} cp ${cpCell} respawn leaves ${ms.toFixed(0)} ms to react (${Math.round(h)} px up)`);
+    }
   }
 
   // --- the cube is unaffected: it still rides the ground ---

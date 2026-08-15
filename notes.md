@@ -336,6 +336,39 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
    Fix: `Player.setMode` preserves the body's **bottom edge** across resizes,
    plus failsafe in GameScene.update: `body.bottom > GROUND_Y+24` → die().
    Remember this for ANY future body-resize feature.
+3. **"The ship crashes at the checkpoint flag"** (user, 2026-08-15). Real, and
+   the flag was not a bystander: **Arcade sets `body.touching` for OVERLAP
+   sensors, not just collisions.** The checkpoint zone is `CELL/2 × GAME_H*2`,
+   so a player inside it overlaps a body extending far below — resolved as
+   *touching down*. The ship's death test read
+   `(blocked.down || touching.down) && velocity.y >= 0`, so every flag it flew
+   past registered as a landing and exploded it in mid-air.
+   Evidence that settled it (`tools/mechtest.mjs` + a death-cause probe): 7 of 7
+   deaths across L2/L3/L4/L8 were `ship-floor` at **exactly** the flag cell,
+   `blocked.down: false`, `touching.down: true`, **nothing solid underneath**,
+   111–144 px above the ground, on `attempt: 1` — no respawn involved.
+   Fix: `grounded` uses **`blocked.down` only**, in GameScene's ship check and
+   in `Player.update`'s cube check — `blocked` is set only by real separation
+   against immovable geometry. The cube had the same false positive, which was
+   silently handing it a free mid-air jump at every flag, portal and finish zone.
+   Guard: mechtest *"ship flies through a checkpoint sensor unharmed"*, which
+   also asserts `cpIndex` advanced so it can't pass by never reaching the flag.
+   **Cautionary pattern: `touching` means "an overlap was resolved in this
+   direction", NOT "solid ground". Any new sensor zone re-arms this bug for any
+   check that confuses the two.**
+   Two things found on the way, both kept:
+   * `die()` took no argument, so all seven call sites were indistinguishable in
+     a death report. It now takes a cause (`spike` / `wall` / `under-ground` /
+     `ship-floor` / `ship-roof` / `tunnel` / `tunnel-exit`), the bot records it
+     with height-above-floor and distance past the last flag, and botrun prints
+     deaths **even for levels it completes** — this bug was invisible precisely
+     because every level still passed.
+   * Ship respawns now return to the **vertical centre of the corridor**
+     (`GameScene.shipRespawnY`) rather than the recorded altitude. Note the
+     honest magnitude: the reaction budget was never the fall time, because
+     during grace a floor touch is harmless — measured, it is
+     `max(grace, fall)`, so this raised 350 ms → 414 ms in a 5-row corridor and
+     350 → 366 in a 4-row one. Worth keeping, but it was not the bug.
 
 ## Verification state
 
