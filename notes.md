@@ -367,6 +367,15 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
 
 ## Autoplayer (tools/autoplay.js) and the headless runner (tools/botrun.mjs)
 
+Browser hygiene, learned the hard way: killing the launcher process leaves
+Chromium's renderer/GPU children running on Windows, so every interrupted run
+leaked a browser. 146 of them accumulated and starved the machine badly enough
+that a whole verification run failed with "timed out waiting for level 1 to
+start" — which looks exactly like a game bug and is not one. `cdp.mjs` now sends
+`Browser.close` before killing, and sweeps leftovers carrying its own
+`qdash-cdp-` profile prefix on startup (never a browser the user is using).
+If a run ever fails to *start* levels, suspect this before suspecting the game.
+
 `node tools/botrun.mjs [levels...]` is the automated way to answer "is this level
 completable?". It launches headless Edge/Chrome, talks the DevTools Protocol over
 Node's built-in WebSocket (no npm packages, matching the project's zero-dependency
