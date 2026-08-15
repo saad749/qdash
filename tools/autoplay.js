@@ -108,17 +108,23 @@
 
     // ---- outcome hooks ----
     const origDie = sc.die.bind(sc);
-    sc.die = () => {
+    sc.die = (cause) => {
       if (!sc.dead && !sc.finished) {
         const p = sc.player.sprite;
+        const b = p.body;
+        // Distance to the last flag passed: deaths that cluster on a checkpoint
+        // are a respawn problem, not a level-design one.
+        const cp = sc.built.checkpoints[sc.cpIndex];
         log({
           t: 'death', x: Math.round(p.x), y: Math.round(p.y),
-          cell: Math.round(p.x / CELL), mode: sc.player.mode,
+          cell: Math.round(p.x / CELL), mode: sc.player.mode, cause: cause || 'unknown',
+          aboveFloor: Math.round(GROUND_Y - b.bottom),
+          cpCell: cp ? cp.x : null, cellsPastCp: cp ? Math.round(p.x / CELL) - cp.x : null,
           pct: Math.min(100, Math.round(p.x / sc.built.finishX * 100)),
           attempt: sc.attempt,
         });
       }
-      origDie();
+      origDie(cause);
     };
     const origComplete = sc.complete.bind(sc);
     sc.complete = () => {

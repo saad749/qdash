@@ -86,8 +86,13 @@ try {
     console.log(r.completed
       ? `COMPLETED in ${r.seconds}s, ${r.deaths} death(s)`
       : `FAILED at ${r.bestPct}% (cell ${r.cell}), ${r.deaths} death(s)${r.error ? ` — ${r.error}` : ''}`);
-    for (const d of r.completed ? [] : r.recentDeaths.slice(-4)) {
-      console.log(`    death: cell ${Math.round((d.x || 0) / 64)} in ${d.mode} mode`);
+    // Deaths are printed even on a pass: a level the bot completes can still be
+    // one that keeps killing you in the same spot, which is what a human notices.
+    for (const d of r.recentDeaths.slice(-6)) {
+      const past = d.cpCell != null ? `, ${d.cellsPastCp} cells past cp ${d.cpCell}` : '';
+      const air = d.aboveFloor != null ? `, ${d.aboveFloor}px up` : '';
+      console.log(`    death: cell ${d.cell ?? Math.round((d.x || 0) / 64)} `
+        + `${d.mode} — ${d.cause || 'unknown'}${air}${past}`);
     }
   }
 } finally {

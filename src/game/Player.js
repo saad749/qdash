@@ -62,7 +62,10 @@ export class PlayerController {
     b.setVelocityX(SCROLL_VX);
 
     if (this.mode === MODES.CUBE) {
-      const grounded = b.blocked.down || b.touching.down;
+      // `blocked`, not `touching` — see GameScene's ship check. Overlap sensors
+      // (checkpoint flags, portals, the finish zone) set `touching.down`, which
+      // handed the cube a free mid-air jump every time it crossed one.
+      const grounded = b.blocked.down;
       if (grounded && held) {
         b.setVelocityY(CUBE.JUMP_VY);
         sfx.jump();

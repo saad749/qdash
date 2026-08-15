@@ -54,7 +54,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.player.sprite, this.built.blocks);
     this.physics.add.overlap(
       this.player.sprite, this.built.hazards,
-      () => this.die(),
+      () => this.die('spike'),
       (pl, hz) => {
         if (this.dead || this.finished) return false;
         const r = new Phaser.Geom.Rectangle(hz.body.x, hz.body.y, hz.body.width, hz.body.height);
@@ -253,14 +253,14 @@ export class GameScene extends Phaser.Scene {
 
     // Wall face = death (cube & ship). Corner grazes get popped on top instead.
     if (this.player.mode !== MODES.TRI && b.blocked.right && !this.cornerForgive()) {
-      this.die();
+      this.die('wall');
       return;
     }
 
     // Failsafe: sinking below the ground plane (e.g. a body-resize embed the
     // separation cap can't resolve) must be a death, never an invisible run.
     if (b.bottom > GROUND_Y + 24) {
-      this.die();
+      this.die('under-ground');
       return;
     }
 
@@ -268,11 +268,14 @@ export class GameScene extends Phaser.Scene {
     // exempt so the portal's lift-off — which fires while still touching the
     // floor — isn't read as a crash.
     if (this.player.mode === MODES.SHIP && this.time.now >= this.shipGraceUntil) {
-      const grounded = (b.blocked.down || b.touching.down) && b.velocity.y >= 0;
-      if (grounded || b.blocked.up || b.top <= TOP_Y) {
-        this.die();
-        return;
-      }
+      // `blocked` only, never `touching`: Arcade sets `touching` for OVERLAP
+      // sensors too, and the checkpoint zone is a full-height overlap zone, so
+      // the flag read as solid ground and exploded the ship in mid-air every
+      // time it flew past one. `blocked` is set only by real separation against
+      // immovable geometry, which is what "landed" has to mean here.
+      const grounded = b.blocked.down && b.velocity.y >= 0;
+      if (grounded) { this.die('ship-floor'); return; }
+      if (b.blocked.up || b.top <= TOP_Y) { this.die('ship-roof'); return; }
     }
 
     // Triangle corridor: manual collision + gap detection.
@@ -280,9 +283,9 @@ export class GameScene extends Phaser.Scene {
       const t = this.built.tunnels.find(tn => tn.contains(b.center.x));
       if (t) {
         this.currentTunnel = t;
-        if (t.collide(this.player) === 'die') { this.die(); return; }
+        if (t.collide(this.player) === 'die') { this.die('tunnel'); return; }
       } else if (this.currentTunnel) {
-        this.die();                              // overran the corridor exit
+        this.die('tunnel-exit');                 // overran the corridor exit
         return;
       }
     }
@@ -352,9 +355,12 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit('qdash:checkpoint', c.index + 1);
   }
 
-  die() {
+  // `cause` names which rule fired. Four call sites look identical from the
+  // outside, so without it a death report says where but never why.
+  die(cause = 'unknown') {
     if (this.dead || this.finished) return;
     this.dead = true;
+    this.lastDeathCause = cause;
     sfx.death();
     if (this.playerId) {
       storage.recordDeath(this.playerId, this.levelId);
@@ -370,11 +376,36 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(DEATH_RESPAWN_MS, () => this.respawn());
   }
 
+  // A ship respawn comes back at rest, so the altitude it comes back at IS the
+  // player's reaction budget: falling h px takes sqrt(2h/GRAVITY), which is
+  // 194 ms from half a cell up — under human reaction time. The recorded
+  // altitude is the worst possible one, because flags tend to sit a few cells
+  // after a dive under a roof-flush block, i.e. in the trough. Come back in the
+  // middle of whatever corridor the flag stands in instead.
+  shipRespawnY(snap) {
+    const bodies = this.physics.overlapRect(
+      snap.x - SHIP.BODY_W / 2, TOP_Y, SHIP.BODY_W, GROUND_Y - TOP_Y, false, true
+    );
+    let roof = TOP_Y, floor = GROUND_Y;
+    for (const sb of bodies) {
+      const go = sb.gameObject;
+      if (!go || !this.built.blocks.contains(go)) continue;
+      if (sb.bottom <= snap.y) roof = Math.max(roof, sb.bottom);
+      else if (sb.y >= snap.y) floor = Math.min(floor, sb.y);
+    }
+    // Degenerate probe (snapshot embedded in geometry): keep what we had.
+    if (floor - roof < SHIP.BODY_H) return snap.y;
+    return (roof + floor) / 2;
+  }
+
   respawn() {
     if (this.finished) return;
     this.attempt += 1;
     this.game.events.emit('qdash:attempt', this.attempt);
-    this.player.applySnapshot(this.snapshot);
+    const snap = this.snapshot.mode === MODES.SHIP
+      ? { ...this.snapshot, y: this.shipRespawnY(this.snapshot) }
+      : this.snapshot;
+    this.player.applySnapshot(snap);
     this.currentTunnel = null;
     this.dead = false;
     this.shipGraceUntil = this.time.now + SHIP.RESPAWN_GRACE_MS;
