@@ -200,17 +200,39 @@ is no cluster size that lands between 4 and 8.4 frames. It also explains the
 user's "only the triples are hard, everything else is easy" — the curve was
 bimodal with nothing in between.
 
-**User decision (2026-08-14): no obstacle may leave under 4 frames.** All 56
-triples became doubles; smoke.mjs enforces the floor and fails with the offending
-cell. Consequences to keep in mind:
-- The hardest hazard in the game is now 8.4 frames, comfortably above the floor.
-- **Difficulty can no longer come from cluster size.** It has to come from
-  density, approach position (a 15-frame window entered late is ~6 usable —
-  that is what level 3's step was), underground must-not-jump zones, ship
-  precision, and tunnel flips.
-- The only lever that would open the 4–8 band is widening `SPIKE_HIT.W` (22 px
-  today; ~40 px puts a double at ~6.5 frames). That is a global change affecting
-  every level — re-run the audit if it is ever touched.
+**User decision (2026-08-14): no obstacle may leave under 4 frames**, and the
+hardest obstacle should sit *near* that floor rather than far above it. Two
+rounds got there:
+
+1. First pass converted all 56 triples to doubles. That satisfied the floor but
+   left the hardest hazard at 8.3 frames — "too easy", correctly.
+2. Second pass retuned the jump instead. `CUBE.JUMP_VY` −1050 → **−1136**, which
+   lifts a triple from 1.4 to **4.4 frames** and puts it right at the floor.
+   Triples are back and are now the game's hard obstacle.
+
+Windows at the current tuning (`node tools/window.mjs --audit`):
+
+| cluster | −1050 (old) | −1136 (now) |
+|---|---|---|
+| single | 15.1 | 18.1 |
+| double | 8.3 | 11.3 |
+| triple | 1.4 (unfair) | **4.4** |
+| quad | 0 (impossible) | 0 (still impossible) |
+
+Consequences to keep in mind:
+- **`tools/autoplay.js` hardcodes `CU.JUMP`.** It must be changed with
+  `constants.js` or the bot mispredicts every jump in the game.
+- The arc grew 3.67 → 3.98 cells and the peak 110 → 129 px (2.02 cells). The
+  cube still cannot land on a +2 platform in practice — the peak exceeds 128 px
+  by a pixel, for an instant — so pads remain the way up and the reachability
+  invariant's premise holds. It is thinner than it was; re-check if the jump is
+  ever raised further.
+- Widening `SPIKE_HIT.W` was the other candidate and was rejected: the kill box
+  is 22 px because the visible triangle is only ~13–43 px wide across the box's
+  vertical span, so a wider box would kill in visibly empty air.
+- Difficulty still should not come only from cluster size: density, approach
+  position (a wide window entered late is a narrow window in practice),
+  underground must-not-jump zones, ship precision and tunnel flips all count.
 
 ### Difficulty levers (beyond "more spikes in a row")
 
@@ -271,8 +293,11 @@ when a human could do it (see the level 3 known gap).
 ## Architecture map (src/)
 
 - `constants.js` — ALL physics tuning + colors + grid helpers (gx/gy). 64 px grid,
-  ground surface y=656, scroll 560 px/s, cube jump −1050/gravity 5000 (arc ≈3.7
-  cells long, climbs max +1 cell), PAD.VY −1400 (reaches +2 cells).
+  ground surface y=656, scroll 560 px/s, cube jump −1136/gravity 5000 (arc ≈4.0
+  cells long, climbs +1 cell; peak 129 px just grazes 2 cells but cannot land
+  there), PAD.VY −1400 (reaches +2 cells). The jump value is chosen by the
+  difficulty floor, not by feel — see the 4-frame floor section, and change
+  `tools/autoplay.js`'s `CU.JUMP` with it.
 - `storage.js` — save blob, player CRUD, records, leaderboard sort. `ui.js` — button/text/panel factory.
 - `audio/` — engine.js (context+buses, unlock on first gesture), sfx.js, music.js, songs.js.
 - `game/` — textures.js (all generated), Player.js (mode state machine, dual

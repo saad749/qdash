@@ -23,7 +23,7 @@
   if (window.__bot) { try { window.__bot.detach(); } catch (e) { /* stale */ } }
 
   const CELL = 64, GROUND_Y = 656, VX = 560, DT = 1 / 60;
-  const CU = { G: 5000, JUMP: -1050, MAX: 1450, HALF: 30, INNER: 16 };
+  const CU = { G: 5000, JUMP: -1136, MAX: 1450, HALF: 30, INNER: 16 };
   const SHIP_HALF_H = 18;
   const TRI_G = 4500, TRI_BODY = 46;
   const PAD_VY = -1400;

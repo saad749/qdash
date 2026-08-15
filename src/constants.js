@@ -11,7 +11,12 @@ export const SCROLL_VX = 560;      // constant horizontal speed, px/s (8.75 cell
 
 export const CUBE = {
   GRAVITY: 5000,
-  JUMP_VY: -1050,                  // peak ~110 px (1.7 cells), airtime 0.42 s, length ~3.7 cells
+  // Peak ~129 px (2.0 cells), airtime 0.45 s, length ~4.0 cells. Tuned so a
+  // TRIPLE spike leaves 4.4 frames — the hardest obstacle allowed sits just above
+  // the 4-frame floor. At the old -1050 a triple was 1.4 frames (unfair) and a
+  // double 8.3 (too easy), with nothing in between: see tools/window.mjs.
+  // tools/autoplay.js hardcodes this value too — change both together.
+  JUMP_VY: -1136,
   MAX_VY: 1450,                    // above |PAD.VY| so pad launches aren't clamped; fall is still
                                    // <25 px per physics step, well under one block
   SPIN_DEG: 415,                   // air spin, snaps to 90° on landing

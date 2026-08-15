@@ -66,7 +66,11 @@ export function hazardClusters(level) {
   return out.sort((a, b) => a.cell - b.cell);
 }
 
-export function measure(level, cellX) {
+// opts.jumpVy / opts.spikeW override the tuning values, so the same simulation
+// can answer "what would this hazard measure if the jump were stronger?".
+export function measure(level, cellX, opts = {}) {
+  const jumpVy = opts.jumpVy ?? CUBE.JUMP_VY;
+  const spikeW = opts.spikeW ?? SPIKE_HIT.W;
   const hazard = level.objects.find(o => o.t === 'spike' && o.x === cellX);
   if (!hazard) return null;
   const row = hazard.y || 0;
@@ -80,7 +84,7 @@ export function measure(level, cellX) {
     const px = c * CELL + CELL / 2;
     const py = GROUND_Y - row * CELL - CELL / 2;
     boxes.push({
-      x0: px - SPIKE_HIT.W / 2, x1: px + SPIKE_HIT.W / 2,
+      x0: px - spikeW / 2, x1: px + spikeW / 2,
       y0: py - SPIKE_HIT.H / 2, y1: py + SPIKE_HIT.H / 2,
     });
   }
@@ -102,7 +106,7 @@ export function measure(level, cellX) {
   const survives = (startX) => {
     let x = startX;
     let cy = surfaceY - HALF_BODY;
-    let vy = CUBE.JUMP_VY;
+    let vy = jumpVy;
     for (let f = 0; f < 120; f++) {
       vy += CUBE.GRAVITY * DT;
       cy += vy * DT;
