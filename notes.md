@@ -172,13 +172,13 @@ Season 1 keeps its role as the ramp; season 2 carries the harder identities.
 - [x] 6 The Growl Loses Power — **underground.** The collapsing lair: most of the
       level runs under a 3-row roof with ceiling spikes, so jumps must be short
       and exact. Clutterfunk's pressure without a mini mode.
-- [ ] 7 The Darks Starts to Spread — **form churn.** Sections of ~40 cells, a
+- [x] 7 The Darks Starts to Spread — **form churn.** Sections of ~40 cells, a
       portal at every seam; the dark spreading = you never stay one shape long.
-- [ ] 8 The Moons Turns Black — **ship gauntlet.** The flying level: three
+- [x] 8 The Moons Turns Black — **ship gauntlet.** The flying level: three
       corridors, the last one narrow, all with lethal floor and roof.
-- [ ] 9 A Hero Arises — **jump-heavy ascent.** Pads and stair chains almost end
+- [x] 9 A Hero Arises — **jump-heavy ascent.** Pads and stair chains almost end
       to end, one short ship break; the level about airtime.
-- [ ] 10 The Twisted Warden Falls — **everything, dense.** Every signature above
+- [x] 10 The Twisted Warden Falls — **everything, dense.** Every signature above
       appears once, at the tightest spacing in the game.
 
 ### The 4-frame floor and why spike counts can't carry difficulty
