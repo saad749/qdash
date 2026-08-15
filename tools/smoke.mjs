@@ -51,7 +51,7 @@ if (!failures) ok(`all ${modules.length} modules import cleanly`);
 
 // --- level data invariants ---
 const { LEVELS, LEVEL_IDS } = await import(new URL('../src/levels/index.js', import.meta.url));
-const { CHECKPOINT_PCTS } = await import(new URL('../src/constants.js', import.meta.url));
+const { CHECKPOINT_PCTS, ROWS } = await import(new URL('../src/constants.js', import.meta.url));
 
 for (const id of [...LEVEL_IDS, 'test']) {
   const lv = LEVELS[id];
@@ -134,8 +134,12 @@ for (const id of [...LEVEL_IDS, 'test']) {
   };
   const blocksArr = objs.filter(o => o.t === 'block');
   const padsArr = objs.filter(o => o.t === 'pad');
+  // A ceiling is a block whose top reaches the top of the playfield: it is a
+  // roof to duck under, not a platform to climb onto.
+  const isCeiling = (b) => b.y + (b.h || 1) >= ROWS;
   for (const b of blocksArr) {
     if (modeAt(b.x) !== 'cube') continue;              // ship ceilings/pillars, etc.
+    if (isCeiling(b)) continue;
     const topRow = b.y + (b.h || 1);
     if (topRow < 2) continue;                          // +1 is reachable from flat ground
     const gap = (a) => b.x - (a.x + (a.w || 1));
@@ -145,6 +149,25 @@ for (const id of [...LEVEL_IDS, 'test']) {
       (topRow <= 2 && padsArr.some(p => b.x - p.x > 0 && b.x - p.x <= 4));
     if (!supported) {
       fail(`${name}: block at x=${b.x} (top ${topRow} cells up) is unreachable — needs a lower block or launch pad before it`);
+    }
+  }
+
+  // Low ceilings over cube runs are the "underground" signature: they cap the
+  // jump arc so spacing that is trivial at full height becomes precise. Below 3
+  // rows of headroom over the surface underneath, the jump stops being tight
+  // and becomes impossible, so that is a hard floor.
+  for (const b of blocksArr.filter(b => modeAt(b.x) === 'cube' && isCeiling(b))) {
+    const x0 = b.x, x1 = b.x + (b.w || 1) - 1;
+    const roofRow = b.y;                               // lowest row the roof occupies
+    let highestFloor = 0;                              // ground, unless a platform sits under it
+    for (const f of blocksArr) {
+      if (f === b || isCeiling(f)) continue;
+      const fx0 = f.x, fx1 = f.x + (f.w || 1) - 1;
+      if (fx0 <= x1 && x0 <= fx1) highestFloor = Math.max(highestFloor, f.y + (f.h || 1));
+    }
+    const headroom = roofRow - highestFloor;
+    if (headroom < 3) {
+      fail(`${name}: ceiling at x=${b.x} leaves ${headroom} rows of headroom (min 3) — unjumpable, not just tight`);
     }
   }
 
@@ -277,6 +300,29 @@ for (const [key, s] of Object.entries(SONGS)) {
   if (!Array.isArray(s.scale) || !s.scale.length) fail(`${key}: bad scale`);
 }
 ok('every song spec is 16 steps per pattern with a sane bpm');
+
+// --- hazard timing windows ---
+// No obstacle may leave less than MIN_FRAMES to react. Below that it stops being
+// a timing test and becomes memorisation; a triple spike is 1.4 frames, which is
+// why none remain. See tools/window.mjs --audit for the full table.
+const { hazardClusters, measure, MIN_FRAMES } = await import(new URL('./window.mjs', import.meta.url));
+let tightest = Infinity, tightestAt = null, offenders = 0;
+for (const id of LEVEL_IDS) {
+  const level = LEVELS[id];
+  for (const c of hazardClusters(level)) {
+    const m = measure(level, c.cell);
+    if (!m) continue;
+    if (m.frames < tightest) { tightest = m.frames; tightestAt = `level ${id} cell ${m.cell}`; }
+    if (m.frames < MIN_FRAMES) {
+      offenders++;
+      fail(`level ${id}: ${m.size} spikes at cell ${m.cell} leave only ${m.frames.toFixed(1)} frames ` +
+        `(${m.ms.toFixed(0)} ms) — floor is ${MIN_FRAMES}`);
+    }
+  }
+}
+if (!offenders) {
+  ok(`every cube hazard leaves ≥${MIN_FRAMES} frames (tightest ${tightest.toFixed(1)} at ${tightestAt})`);
+}
 
 // --- palette + textures ---
 const { paletteFor, MODE_KEYS, lighten, darken } = await import(new URL('../src/palette.js', import.meta.url));

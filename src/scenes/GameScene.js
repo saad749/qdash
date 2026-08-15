@@ -3,7 +3,7 @@
 
 import {
   GAME_W, GAME_H, CELL, GROUND_Y, MODES, DEPTH, COLORS, DEFAULT_COLOR,
-  DEATH_RESPAWN_MS, PAD, gx,
+  DEATH_RESPAWN_MS, PAD, SHIP, TOP_Y, gx,
 } from '../constants.js';
 import { buildLevel } from '../game/LevelBuilder.js';
 import { paletteFor, lighten, darken, mix } from '../palette.js';
@@ -37,6 +37,7 @@ export class GameScene extends Phaser.Scene {
     this.bestPct = 0;
     this.lastPct = -1;
     this.currentTunnel = null;
+    this.shipGraceUntil = 0;      // set on respawn; see SHIP.RESPAWN_GRACE_MS
     this.palette = paletteFor(this.levelId);
 
     this.buildBackdrop(level);
@@ -263,6 +264,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // The ship flies or it dies: roof or any surface is lethal. Moving upward is
+    // exempt so the portal's lift-off — which fires while still touching the
+    // floor — isn't read as a crash.
+    if (this.player.mode === MODES.SHIP && this.time.now >= this.shipGraceUntil) {
+      const grounded = (b.blocked.down || b.touching.down) && b.velocity.y >= 0;
+      if (grounded || b.blocked.up || b.top <= TOP_Y) {
+        this.die();
+        return;
+      }
+    }
+
     // Triangle corridor: manual collision + gap detection.
     if (this.player.mode === MODES.TRI) {
       const t = this.built.tunnels.find(tn => tn.contains(b.center.x));
@@ -365,6 +377,7 @@ export class GameScene extends Phaser.Scene {
     this.player.applySnapshot(this.snapshot);
     this.currentTunnel = null;
     this.dead = false;
+    this.shipGraceUntil = this.time.now + SHIP.RESPAWN_GRACE_MS;
     this.applyModeVisuals(this.player.mode);   // the checkpoint may be in another section
   }
 

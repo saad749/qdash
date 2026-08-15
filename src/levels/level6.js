@@ -1,6 +1,11 @@
-// Level 6 — The Growl Loses Power. Season 2 opener: the beast is fading, so the
-// level starts at roughly level 4's tier rather than picking up level 5's. One
-// long lair tunnel, one open ship corridor, crumbling step chains. ~98 s.
+// Level 6 — The Growl Loses Power. Season 2 opener and the **underground**
+// level: most of its cube ground runs under a 3-row roof, so the full jump arc
+// only just fits and ceiling spikes mark the stretches where jumping at all is
+// fatal. Clutterfunk's squeeze without a mini mode. ~98 s.
+//
+// Rules for the roofed stretches: no platforms and no pads under a 3-row roof —
+// a jump from anything but the floor, or a pad launch, hits the ceiling. The
+// headroom invariant in smoke.mjs enforces the first of those.
 
 import {
   block, spike, spikes, spikeDown, portal, checkpoint,
@@ -14,7 +19,7 @@ export default {
   song: 'song6',
   bg: { hue: 0x996633 },
   objects: [
-    // --- cube opener (0–130): the growl still has teeth, but slow ---
+    // --- cube opener (0–130): open sky, teaches the level's rhythm ---
     ...spikes(16, 0, 2),
     spike(28),
     block(38, 0, 2, 1), spike(42),
@@ -45,22 +50,27 @@ export default {
     tunnel(226, 26, 1, 5),
     portal(246, 'cube', 1, 1, 4),
 
-    // --- cube midsection (255–400): the first triple, then a pad climb ---
-    ...spikes(262, 0, 2),
-    spike(272),
+    // --- underground one (258–398): roof at row 3. Floor spikes say jump,
+    // ceiling spikes say stay down — the whole section is that alternation. ---
+    ceiling(258, 140, 3),
+    ...spikes(266, 0, 2),
+    spikeDown(276, 2),
     checkpoint(284),
-    ...spikes(292, 0, 3),
-    block(304, 0, 4, 1), ...spikes(308, 0, 2), block(310, 1, 4, 1),
+    ...spikes(288, 0, 2),
+    spikeDown(298, 2),
+    spike(306),
+    spikeDown(314, 2),
     ...spikes(322, 0, 2),
-    spike(332),
-    pad(340),
-    block(343, 1, 2, 1), ...spikes(345, 0, 2), block(347, 2, 2, 1),
+    spikeDown(334, 2),
+    spike(342),
+    spikeDown(350, 2),
     ...spikes(358, 0, 2),
-    spike(368),
-    block(378, 0, 1, 1),
-    ...spikes(388, 0, 2),
+    spikeDown(368, 2),
+    spike(376),
+    spikeDown(384, 2),
+    spike(392),
 
-    // --- ship corridor (404–518): 5 rows, sparse — room to breathe ---
+    // --- ship corridor (404–518): 5 rows, roof and floor both lethal now ---
     portal(404, 'ship'),
     ceiling(408, 110, 5),
     block(420, 0, 1, 2),
@@ -74,35 +84,39 @@ export default {
     spike(504),
     portal(516, 'cube', 0, 1, 5),      // full corridor height so the ship can't fly past
 
-    // --- cube run (525–740) ---
-    ...spikes(530, 0, 2),
-    ...spikes(542, 0, 3),
-    block(554, 0, 1, 1),
-    spike(560),
-    ...spikes(568, 0, 2),
+    // --- underground two (530–680): same idea, tighter spacing ---
+    ceiling(530, 150, 3),
+    ...spikes(536, 0, 2),
+    spikeDown(546, 2),
+    spike(554),
+    spikeDown(562, 2),
+    ...spikes(570, 0, 2),
     checkpoint(576),
-    ...spikes(584, 0, 3),
-    spike(596),
-    block(604, 0, 4, 1), ...spikes(608, 0, 2), block(610, 1, 4, 1),
-    ...spikes(622, 0, 2),
-    spike(634),
-    ...spikes(644, 0, 3),
-    block(656, 0, 2, 1),
-    spike(662),
-    ...spikes(672, 0, 2),
-    spike(684),
-    ...spikes(694, 0, 3),
-    spike(706),
-    block(714, 0, 1, 1),
-    ...spikes(722, 0, 2),
+    ...spikes(584, 0, 2),
+    spikeDown(596, 2),
+    spike(604),
+    spikeDown(612, 2),
+    ...spikes(620, 0, 2),
+    spikeDown(630, 2),
+    spike(638),
+    spikeDown(646, 2),
+    ...spikes(654, 0, 2),
+    spikeDown(664, 2),
+    spike(672),
+
+    // --- back into open sky (686–740) ---
+    ...spikes(690, 0, 2),
+    spike(702),
+    ...spikes(712, 0, 2),
+    spike(722),
     checkpoint(731),
 
-    // --- finale (740–860): one last climb while the growl gives out ---
+    // --- finale (740–860): the pad climb needs headroom, so no roof here ---
     ...spikes(742, 0, 2),
     spike(754),
     pad(762),
     block(765, 1, 2, 1), ...spikes(767, 0, 2), block(769, 2, 2, 1),
-    ...spikes(780, 0, 3),
+    ...spikes(780, 0, 2),
     spike(792),
     ...spikes(802, 0, 2),
     spike(814),

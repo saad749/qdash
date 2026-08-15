@@ -91,7 +91,7 @@ try {
     }
   }
 } finally {
-  session.close();
+  await session.close();
 }
 
 const failed = results.filter(r => !r.completed);

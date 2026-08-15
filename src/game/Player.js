@@ -5,8 +5,6 @@
 import { SCROLL_VX, CUBE, SHIP, TRI, MODES, DEPTH } from '../constants.js';
 import { sfx } from '../audio/sfx.js';
 
-const TOP_Y = 16;                 // world y of the playfield ceiling (row 9 top)
-
 export class PlayerController {
   constructor(scene, x, y, tint) {
     this.scene = scene;
@@ -42,6 +40,7 @@ export class PlayerController {
       b.setSize(SHIP.BODY_W, SHIP.BODY_H);
       b.setGravityY(SHIP.GRAVITY);
       b.setMaxVelocity(2000, SHIP.MAX_VY);
+      b.setVelocityY(SHIP.LIFTOFF_VY);      // off the floor before surfaces turn lethal
     } else {
       s.setTexture('tri');
       b.setSize(TRI.BODY, TRI.BODY);
@@ -74,11 +73,9 @@ export class PlayerController {
         s.angle += CUBE.SPIN_DEG * dtSec;
       }
     } else if (this.mode === MODES.SHIP) {
+      // No ceiling clamp: GameScene kills on roof or surface contact, so the
+      // ship has to be flown rather than parked against an edge.
       b.setAccelerationY(held ? SHIP.THRUST : 0);
-      if (s.y < TOP_Y + b.halfHeight) {               // soft ceiling: slide, never die
-        s.y = TOP_Y + b.halfHeight;
-        if (b.velocity.y < 0) b.setVelocityY(0);
-      }
       s.rotation = Phaser.Math.Clamp(b.velocity.y / SHIP.MAX_VY, -1, 1) * 0.45;
     } else if (this.mode === MODES.TRI) {
       if (justPressed) this.flip();
@@ -122,6 +119,9 @@ export class PlayerController {
       this.mode === MODES.CUBE ? CUBE.GRAVITY :
       this.mode === MODES.SHIP ? SHIP.GRAVITY : TRI.GRAVITY * this.gravityDir
     );
+    // Ship respawns come back at rest: GameScene grants SHIP.RESPAWN_GRACE_MS of
+    // harmless surfaces instead. A launch would be right for a floor-adjacent
+    // checkpoint and fatal for a roof-adjacent one.
     this.sprite.setAngle(0);
     this.sprite.setVisible(true);
     this.sprite.body.enable = true;

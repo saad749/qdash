@@ -20,6 +20,8 @@ export const CUBE = {
   SIZE: 60,                        // sprite px
 };
 
+export const TOP_Y = 16;           // world y of the playfield ceiling (top of row 9)
+
 export const SHIP = {
   GRAVITY: 1700,
   THRUST: -3400,                   // applied while held → net -1700 upward
@@ -27,6 +29,15 @@ export const SHIP = {
   W: 76, H: 44,                    // sprite px
   BODY_W: 56, BODY_H: 36,
   INNER: 26,
+  // The ship must fly: touching the roof or any surface kills. Entering the mode
+  // from a grounded cube would therefore be instant death, so the portal flings
+  // you off the floor — you are airborne before the first surface check runs.
+  LIFTOFF_VY: -420,
+  // Respawning mid-corridor can put you anywhere between floor and roof, so no
+  // single launch velocity is safe (upward kills a roof-adjacent respawn). The
+  // player comes back at rest instead, with surfaces briefly harmless so there
+  // is time to start flying.
+  RESPAWN_GRACE_MS: 350,
 };
 
 export const TRI = {

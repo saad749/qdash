@@ -71,8 +71,11 @@ export async function openBrowser({ port = 9222 } = {}) {
     throw new Error('No Chromium browser found. Set QDASH_BROWSER to msedge.exe or chrome.exe.');
   }
   const profileDir = mkdtempSync(join(tmpdir(), 'qdash-cdp-'));
+  // QDASH_HEADED=1 runs a visible window (GPU-composited) instead of headless
+  // software rendering — useful when frame pacing is the thing under test.
+  const headless = process.env.QDASH_HEADED ? [] : ['--headless=new'];
   const proc = spawn(exe, [
-    '--headless=new',
+    ...headless,
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profileDir}`,
     '--window-size=1280,720',
@@ -113,11 +116,15 @@ export async function openBrowser({ port = 9222 } = {}) {
 
   return {
     cdp,
-    close() {
-      // The open socket keeps Node's event loop alive, so closing it is what
-      // lets a caller exit normally rather than hanging after its last capture.
+    // Browser.close first: killing the launcher leaves Chromium's renderer and
+    // GPU children running on Windows, and a few leaked runs are enough to
+    // starve the machine and make later runs time out on startup.
+    async close() {
+      try { await cdp.send('Browser.close'); } catch { /* already exiting */ }
+      // The open socket also keeps Node's event loop alive, so a caller that
+      // forgets this hangs after its last command.
       try { ws.close(); } catch { /* already gone */ }
-      proc.kill();
+      try { proc.kill(); } catch { /* already dead */ }
       try { rmSync(profileDir, { recursive: true, force: true }); } catch { /* windows lock */ }
     },
   };

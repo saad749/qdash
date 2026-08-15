@@ -18,7 +18,8 @@ ES modules don't load from `file://`.)
 
 - **Space / Up / W / Click** — jump (cube), thrust (ship), flip gravity (triangle)
 - **Esc / P** — pause · **M** — mute · **R** — restart level
-- Portals switch your form: **cube** jumps, **ship** flies while held, and the
+- Portals switch your form: **cube** jumps, **ship** flies while held — touching
+  the roof or the floor destroys it, so it has to be flown, not parked — and the
   **triangle** rides the edges of neon zig-zag tunnels — tap to flip gravity to
   the opposite edge. Watch for 2-cell tunnel shifts: you must be riding the
   receding edge to survive them.
@@ -81,6 +82,11 @@ notes: **notes.md**.
 - `node tools/botrun.mjs [levels...]` — plays levels for real in headless Edge or
   Chrome (DevTools Protocol, no npm packages) and reports whether the autoplayer
   finished each one. Needs `npm start` running in another shell.
+- `node tools/window.mjs <level> <cell>` — how many frames/ms a hazard leaves you
+  to jump; `--audit` tables every hazard in every level. No obstacle in the game
+  leaves under 4 frames, and the smoke test enforces that floor.
+- `node tools/mechtest.mjs` — mechanic assertions that need real physics running
+  (ship roof/floor death, portal lift-off), which the stubbed smoke test can't reach
 - `node tools/shot.mjs <level> <seconds...> [--die]` — screenshots the running
   game at each timestamp (and mid-death with `--die`) into `tools/shots/`, for
   checking visual changes instead of guessing at them.
