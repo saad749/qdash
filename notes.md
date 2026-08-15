@@ -116,10 +116,159 @@ Decisions taken up front:
       the first attempt was *worse* — a too-light block body turned tinting into
       pastel mud — which is exactly why this step is not optional
 
+## Level identity plan — "every level feels like the same journey"
+
+User feedback (2026-08-14): the levels all read the same, and the only real
+obstacle is the triple spike. True — every level was cube → tunnel → ship →
+cube → tunnel → cube with near-identical spacing, so the *order* of forms was
+the only structure and nothing else varied.
+
+The fix is to give each level one **signature** that dominates its layout, the
+way each GD level does, and to widen the difficulty vocabulary beyond "how many
+spikes in a row".
+
+### What GD does that we can copy with the primitives we already have
+
+QDash has no mini/wave/UFO/orbs/speed portals, so the GD ideas get translated:
+
+| GD level | What makes it distinct | QDash translation |
+|---|---|---|
+| Jumper | fast quick jumps, consistency across segments | long cube stretches, pad + platform chains, almost no ship |
+| Clutterfunk | mini mode: tight spaces, small hit windows | **low ceilings over cube sections** — a 3-row roof forbids the full jump arc |
+| Cycles | gravity discipline, repeated switches | triangle corridors that never stop flipping |
+| Electrodynamix | tight ship passages under pressure | long ship corridors, narrow gaps, now with lethal edges |
+| Hexagon Force | constant form switching | portals every ~40 cells, no section long enough to settle |
+| Deadlocked | everything, at density | all mechanics, tightest spacing, no rest |
+| Power Trip (SubZero) | longest, tighter corridors | the season finale profile |
+| Airborne Robots (Meltdown) | hazards demanding careful jump timing | ceiling spikes over low roofs |
+
+### The new capability this needs
+
+- [x] **Low ceilings in cube sections.** `ceiling()` already existed but had only
+      ever been used in ship sections. Over a cube run it caps the jump arc, so
+      spacing that is trivial at full height becomes precise. The reachability
+      invariant now recognises a ceiling (a block whose top reaches ROWS) as
+      terrain rather than an unreachable platform, and a new headroom invariant
+      requires ≥3 rows over whatever surface is underneath — below that the jump
+      is impossible rather than tight.
+      **Authoring rules under a 3-row roof: no platforms and no pads.** A jump
+      from anything above the floor, or a pad launch, hits the roof. The headroom
+      check enforces the platform half; pads are on you.
+
+### Signatures
+
+Season 1 keeps its role as the ramp; season 2 carries the harder identities.
+
+- [ ] 1 Stereo Madness — **the teacher.** Unchanged: one hazard type at a time.
+- [ ] 2 Finally Out — **jump rhythm.** Evenly spaced doubles and step-ups you
+      can fall into a rhythm with; the first level that punishes late timing.
+- [~] 3 Campin Outside — **platform chains.** Time spent off the ground: pads
+      onto elevated runs, spikes below rather than in front. (Also move the
+      cell-545 spike in from the step edge — see the known gap above.)
+- [ ] 4 Out Lost — **first real ship test.** Longer corridor, pillars alternating
+      floor/roof, lethal edges make it a flying test rather than a slide.
+- [ ] 5 Back on Track — **tunnel discipline.** Two long corridors, flips every
+      ~0.9 s, width 3 throughout.
+- [x] 6 The Growl Loses Power — **underground.** The collapsing lair: most of the
+      level runs under a 3-row roof with ceiling spikes, so jumps must be short
+      and exact. Clutterfunk's pressure without a mini mode.
+- [x] 7 The Darks Starts to Spread — **form churn.** Sections of ~40 cells, a
+      portal at every seam; the dark spreading = you never stay one shape long.
+- [x] 8 The Moons Turns Black — **ship gauntlet.** The flying level: three
+      corridors, the last one narrow, all with lethal floor and roof.
+- [x] 9 A Hero Arises — **jump-heavy ascent.** Pads and stair chains almost end
+      to end, one short ship break; the level about airtime.
+- [x] 10 The Twisted Warden Falls — **everything, dense.** Every signature above
+      appears once, at the tightest spacing in the game.
+
+### The 4-frame floor and why spike counts can't carry difficulty
+
+`node tools/window.mjs --audit` measures, for every hazard, how many positions
+you can jump from and live — in px, ms and frames, simulated the way the game
+integrates (semi-implicit Euler, 60 fps, inner hitbox vs spike kill boxes).
+
+Measured windows on flat ground:
+
+| cluster | window | frames |
+|---|---|---|
+| single | 252 ms | 15.3 |
+| double | 138 ms | 8.4 |
+| triple | 23 ms | 1.6 |
+
+That is the whole vocabulary, and it is **quantised by the 64 px grid**: there
+is no cluster size that lands between 4 and 8.4 frames. It also explains the
+user's "only the triples are hard, everything else is easy" — the curve was
+bimodal with nothing in between.
+
+**User decision (2026-08-14): no obstacle may leave under 4 frames**, and the
+hardest obstacle should sit *near* that floor rather than far above it. Two
+rounds got there:
+
+1. First pass converted all 56 triples to doubles. That satisfied the floor but
+   left the hardest hazard at 8.3 frames — "too easy", correctly.
+2. Second pass retuned the jump instead. `CUBE.JUMP_VY` −1050 → **−1136**, which
+   lifts a triple from 1.4 to **4.4 frames** and puts it right at the floor.
+   Triples are back and are now the game's hard obstacle.
+
+Windows at the current tuning (`node tools/window.mjs --audit`):
+
+| cluster | −1050 (old) | −1136 (now) |
+|---|---|---|
+| single | 15.1 | 18.1 |
+| double | 8.3 | 11.3 |
+| triple | 1.4 (unfair) | **4.4** |
+| quad | 0 (impossible) | 0 (still impossible) |
+
+Consequences to keep in mind:
+- **`tools/autoplay.js` hardcodes `CU.JUMP`.** It must be changed with
+  `constants.js` or the bot mispredicts every jump in the game.
+- The arc grew 3.67 → 3.98 cells and the peak 110 → 129 px (2.02 cells). The
+  cube still cannot land on a +2 platform in practice — the peak exceeds 128 px
+  by a pixel, for an instant — so pads remain the way up and the reachability
+  invariant's premise holds. It is thinner than it was; re-check if the jump is
+  ever raised further.
+- Widening `SPIKE_HIT.W` was the other candidate and was rejected: the kill box
+  is 22 px because the visible triangle is only ~13–43 px wide across the box's
+  vertical span, so a wider box would kill in visibly empty air.
+- Difficulty still should not come only from cluster size: density, approach
+  position (a wide window entered late is a narrow window in practice),
+  underground must-not-jump zones, ship precision and tunnel flips all count.
+
+### Difficulty levers (beyond "more spikes in a row")
+
+- [ ] tighten hazard spacing in later levels (currently 7–9 cells everywhere)
+- [ ] spikes *on* platforms, forcing jump-land-jump chains
+- [ ] ceiling spikes paired with low roofs
+- [ ] narrower ship gaps now that edges kill
+- [ ] longer unbroken tunnel runs with more 2-cell shifts
+
+### Verification note
+
+Every layout change has to survive `smoke.mjs` **and** `botrun.mjs`. The bot is
+the only check that a shape is actually clearable, and it is conservative — it
+jumps at the first safe frame, so anything needing a late jump will fail it even
+when a human could do it (see the level 3 known gap).
+
 ## Requirements implemented (all confirmed with the user)
 
 - 5 levels, designs mirroring the first five official GD levels, but named:
   1 Stereo Madness · 2 Finally Out · 3 Campin Outside · 4 Out Lost · 5 Back on Track
+- **The ship must fly** (user request, 2026-08-14): roof or surface contact is
+  death, replacing the old "soft ceiling: slide, never die" clamp. Two entry
+  points had to be made safe, and they need *different* answers:
+  * **Portal entry** happens from a grounded cube, so `setMode` applies
+    `SHIP.LIFTOFF_VY` and the surface check exempts upward motion — otherwise
+    the launch frame itself reads as a crash.
+  * **Respawn** at a checkpoint inside a corridor can land you anywhere between
+    floor and roof, so *no* launch velocity is safe: upward kills a
+    roof-adjacent respawn (this is what made level 4 die 158× at cell 257).
+    The player comes back at rest with `SHIP.RESPAWN_GRACE_MS` of harmless
+    surfaces instead. Level 4's `checkpoint(257)` sits inside a 4-row corridor —
+    keep that case in mind before touching this.
+  Covered by `tools/mechtest.mjs`, which needs real physics. Two traps when
+  writing tests there: assert on `attempt`, not `dead` (which clears at the
+  700 ms respawn), and never assert that an unflown ship *survives* — it cannot,
+  by design. Assert "one death, not a loop".
 - 3 modes via portals: **cube** (tap jump), **ship** (hold to fly),
   **triangle** — user-invented mode: rides the edges of neon zig-zag tunnels,
   tap flips gravity to the opposite edge. Every level has ≥1 tunnel section.
@@ -144,8 +293,11 @@ Decisions taken up front:
 ## Architecture map (src/)
 
 - `constants.js` — ALL physics tuning + colors + grid helpers (gx/gy). 64 px grid,
-  ground surface y=656, scroll 560 px/s, cube jump −1050/gravity 5000 (arc ≈3.7
-  cells long, climbs max +1 cell), PAD.VY −1400 (reaches +2 cells).
+  ground surface y=656, scroll 560 px/s, cube jump −1136/gravity 5000 (arc ≈4.0
+  cells long, climbs +1 cell; peak 129 px just grazes 2 cells but cannot land
+  there), PAD.VY −1400 (reaches +2 cells). The jump value is chosen by the
+  difficulty floor, not by feel — see the 4-frame floor section, and change
+  `tools/autoplay.js`'s `CU.JUMP` with it.
 - `storage.js` — save blob, player CRUD, records, leaderboard sort. `ui.js` — button/text/panel factory.
 - `audio/` — engine.js (context+buses, unlock on first gesture), sfx.js, music.js, songs.js.
 - `game/` — textures.js (all generated), Player.js (mode state machine, dual
@@ -206,20 +358,27 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
   Caveat: a bot clearing a level says it is **possible**, not that it is fairly
   tuned for a human — the bot has frame-perfect lookahead. Season 2's human
   difficulty is still unmeasured; the observations below apply to season 1 only.
-- **KNOWN GAP — level 3 no longer clears cell 545 under `botrun.mjs`.** A full
-  10-level run on 2026-08-14 came back 9/10: level 3 stalls at 76 %, dying 15×
-  at cell 545 — the spike sitting on the trailing edge of `stairs(540, 3, 2)`,
-  the spot already called out under difficulty observations as "tight but fair".
-  It is **not** a regression from the visual pass: the same run on the previous
-  commit, with the visual work stashed, fails identically (same cell, same death
-  count), and `src/levels/level3.js` has not been touched since the initial
-  commit. So the level data is byte-identical to when it was recorded as passing
-  in 2026-08-08's run — what changed is the harness/environment.
-  Most likely the bot rather than the level: clearing a spike at a step's
-  trailing edge needs a *late* jump, and the cube logic deliberately "jumps at
-  the FIRST fully-safe frame, never the last viable one". Unresolved — either
-  teach the bot to consider late jumps, or move the spike a cell in from the
-  edge. Don't assume level 3 is broken for humans on this evidence alone.
+- **RESOLVED — level 3 cell 545 (was a 9/10 blocker).** A full run on 2026-08-14
+  came back 9/10 with level 3 stalling at 76 %. Four causes were ruled out one at
+  a time, and the result is worth keeping because it corrects an old note:
+  * **Not the visual pass** — stash it and the same run fails identically.
+  * **Not the level** — `level3.js` untouched since the initial commit.
+  * **Not the bot** — `autoplay.js` only ever touched by the initial commit and
+    the QDash rename (an event prefix, no logic).
+  * **Not frame rate** — `QDASH_HEADED=1` (visible, GPU-composited window) fails
+    at the same cell with the same death count as headless software rendering.
+    Deterministic, not a timing coin-flip.
+  With all four excluded, the 2026-08-08 "all 5 levels, zero deaths" note
+  **cannot be reproduced from committed code**; that run most likely used an
+  in-page hand-tuned bot never written back to `tools/autoplay.js`. Treat the old
+  claim as unverified rather than as a regression baseline.
+  The real mechanism was **not** the spike but the step-up: landing on step one
+  around cell 542, the cube had ~6 frames to be airborne before step two's face,
+  and a wall face is death. 3- and 4-wide steps both left ~6 frames, which only a
+  late jump clears; the autoplayer always jumps at the first safe frame. Fixed by
+  `stairs(540, 5, 2)` (~13 frames) with the spike two cells in from the far edge.
+  Level 2 has the same stairs-plus-spike shape and always passed — the difference
+  was approach phase, not the pattern.
 - **End-to-end playthroughs (season 1): DONE (2026-08-08, browser automation).** All 5
   levels completed by `tools/autoplay.js` (see below) with zero deaths on the
   final bot runs. (Level 3 no longer reproduces — see the known gap above;
@@ -232,6 +391,15 @@ Camera: manual `scrollX = player.x − 384`. Wall-face contact (`blocked.right`)
   board); delete via Menu → Players & Colors if unwanted.
 
 ## Autoplayer (tools/autoplay.js) and the headless runner (tools/botrun.mjs)
+
+Browser hygiene, learned the hard way: killing the launcher process leaves
+Chromium's renderer/GPU children running on Windows, so every interrupted run
+leaked a browser. 146 of them accumulated and starved the machine badly enough
+that a whole verification run failed with "timed out waiting for level 1 to
+start" — which looks exactly like a game bug and is not one. `cdp.mjs` now sends
+`Browser.close` before killing, and sweeps leftovers carrying its own
+`qdash-cdp-` profile prefix on startup (never a browser the user is using).
+If a run ever fails to *start* levels, suspect this before suspecting the game.
 
 `node tools/botrun.mjs [levels...]` is the automated way to answer "is this level
 completable?". It launches headless Edge/Chrome, talks the DevTools Protocol over

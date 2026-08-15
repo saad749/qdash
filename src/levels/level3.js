@@ -83,7 +83,13 @@ export default {
     ...spikes(514, 0, 2),
     spike(524),
     spike(530),
-    ...stairs(540, 3, 2), spike(545, 2),
+    // 5-wide steps. The binding constraint here is not the spike but the
+    // step-up: landing on step one around cell 542, the cube must be airborne
+    // before step two's face or it dies on the wall. On 3- and 4-wide steps that
+    // left ~6 frames, which only a late jump clears and the autoplayer never
+    // jumps late. 5-wide gives ~13. The spike sits two cells in from the top
+    // step's far edge so the 15-frame jump window is entered early, not late.
+    ...stairs(540, 5, 2), spike(548, 2),
     ...spikes(556, 0, 2),
     pad(563),
     block(566, 1, 3, 1), ...spikes(565, 0, 3),

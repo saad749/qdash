@@ -2,10 +2,31 @@
 // Node's global WebSocket speaks CDP directly, so driving a real browser needs
 // no npm packages — which keeps the project's zero-dependency rule intact.
 
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+const PROFILE_PREFIX = 'qdash-cdp-';
+
+// A run killed mid-flight (Ctrl-C, task kill) never reaches close(), and the
+// browser it left behind keeps running. Enough of those starve the machine —
+// a pile of them once turned a whole verification run into a startup timeout.
+// Sweep only processes carrying our own profile prefix, so a browser the user
+// is actually using is never touched.
+function sweepStrays() {
+  try {
+    if (process.platform === 'win32') {
+      execFileSync('powershell', ['-NoProfile', '-Command',
+        "Get-CimInstance Win32_Process -Filter \"Name='msedge.exe' OR Name='chrome.exe'\" | " +
+        `Where-Object { $_.CommandLine -like '*${PROFILE_PREFIX}*' } | ` +
+        'ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
+      ], { stdio: 'ignore', timeout: 20000 });
+    } else {
+      execFileSync('pkill', ['-f', PROFILE_PREFIX], { stdio: 'ignore' });
+    }
+  } catch { /* nothing to sweep, or no permission — not worth failing over */ }
+}
 
 const CANDIDATES = [
   process.env.QDASH_BROWSER,
@@ -70,9 +91,13 @@ export async function openBrowser({ port = 9222 } = {}) {
   if (!exe) {
     throw new Error('No Chromium browser found. Set QDASH_BROWSER to msedge.exe or chrome.exe.');
   }
-  const profileDir = mkdtempSync(join(tmpdir(), 'qdash-cdp-'));
+  sweepStrays();
+  const profileDir = mkdtempSync(join(tmpdir(), PROFILE_PREFIX));
+  // QDASH_HEADED=1 runs a visible window (GPU-composited) instead of headless
+  // software rendering — useful when frame pacing is the thing under test.
+  const headless = process.env.QDASH_HEADED ? [] : ['--headless=new'];
   const proc = spawn(exe, [
-    '--headless=new',
+    ...headless,
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profileDir}`,
     '--window-size=1280,720',
@@ -113,11 +138,15 @@ export async function openBrowser({ port = 9222 } = {}) {
 
   return {
     cdp,
-    close() {
-      // The open socket keeps Node's event loop alive, so closing it is what
-      // lets a caller exit normally rather than hanging after its last capture.
+    // Browser.close first: killing the launcher leaves Chromium's renderer and
+    // GPU children running on Windows, and a few leaked runs are enough to
+    // starve the machine and make later runs time out on startup.
+    async close() {
+      try { await cdp.send('Browser.close'); } catch { /* already exiting */ }
+      // The open socket also keeps Node's event loop alive, so a caller that
+      // forgets this hangs after its last command.
       try { ws.close(); } catch { /* already gone */ }
-      proc.kill();
+      try { proc.kill(); } catch { /* already dead */ }
       try { rmSync(profileDir, { recursive: true, force: true }); } catch { /* windows lock */ }
     },
   };

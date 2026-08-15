@@ -18,7 +18,8 @@ ES modules don't load from `file://`.)
 
 - **Space / Up / W / Click** — jump (cube), thrust (ship), flip gravity (triangle)
 - **Esc / P** — pause · **M** — mute · **R** — restart level
-- Portals switch your form: **cube** jumps, **ship** flies while held, and the
+- Portals switch your form: **cube** jumps, **ship** flies while held — touching
+  the roof or the floor destroys it, so it has to be flown, not parked — and the
   **triangle** rides the edges of neon zig-zag tunnels — tap to flip gravity to
   the opposite edge. Watch for 2-cell tunnel shifts: you must be riding the
   receding edge to survive them.
@@ -40,17 +41,22 @@ ES modules don't load from `file://`.)
 
 **Season 2 — The Dark Awakens** · released 14 Aug 2026
 
-6. **The Growl Loses Power** — the beast fades: crumbling steps, a dying-ember sky
-7. **The Darks Starts to Spread** — corridors that keep narrowing, 5 → 4 → 3 wide
-8. **The Moons Turns Black** — the ship-heaviest level, two long night corridors
-9. **A Hero Arises** — launch-pad ascents onto rising platform chains
-10. **The Twisted Warden Falls** — the boss: the longest level, every mechanic at once
+6. **The Growl Loses Power** — underground: long stretches under a 3-row roof
+   where floor spikes mean jump and ceiling spikes mean stay down
+7. **The Darks Starts to Spread** — form churn: ten sections, so you change shape
+   every few seconds and never settle
+8. **The Moons Turns Black** — the ship gauntlet: three corridors, over half the
+   level flying, roof and floor both lethal
+9. **A Hero Arises** — jump-heavy: pad ascents and stair chains almost end to end
+10. **The Twisted Warden Falls** — the boss: every signature above, once, at the
+    tightest spacing in the game
 
 **Season 3** — coming soon.
 
-Difficulty ramps up inside each season: later levels bring triple spikes, tighter
-ship corridors, and narrow tunnels with rapid forced flips. Season 2 opens around
-level 4's difficulty and ends harder than anything in season 1.
+Every level has one signature that dominates its layout, rather than all of them
+running the same cube → tunnel → ship sequence. Difficulty ramps inside each
+season, and no obstacle anywhere leaves you less than 4 frames (67 ms) to react —
+the tightest in the game is a triple spike at 4.4 frames.
 
 ## Players, colors, leaderboards
 
@@ -81,6 +87,11 @@ notes: **notes.md**.
 - `node tools/botrun.mjs [levels...]` — plays levels for real in headless Edge or
   Chrome (DevTools Protocol, no npm packages) and reports whether the autoplayer
   finished each one. Needs `npm start` running in another shell.
+- `node tools/window.mjs <level> <cell>` — how many frames/ms a hazard leaves you
+  to jump; `--audit` tables every hazard in every level. No obstacle in the game
+  leaves under 4 frames, and the smoke test enforces that floor.
+- `node tools/mechtest.mjs` — mechanic assertions that need real physics running
+  (ship roof/floor death, portal lift-off), which the stubbed smoke test can't reach
 - `node tools/shot.mjs <level> <seconds...> [--die]` — screenshots the running
   game at each timestamp (and mid-death with `--die`) into `tools/shots/`, for
   checking visual changes instead of guessing at them.

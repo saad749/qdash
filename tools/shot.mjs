@@ -67,5 +67,5 @@ try {
     await shoot(cdp, `l${level}-death`);
   }
 } finally {
-  session.close();
+  await session.close();
 }

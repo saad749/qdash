@@ -75,20 +75,24 @@ export default {
     block(408, 0, 2, 2),
     portal(414, 'cube', 0, 1, 4),
 
-    // --- cube ascent (425–560) ---
-    ...spikes(430, 0, 3),
-    spike(442),
-    block(450, 0, 4, 1), ...spikes(454, 0, 2), block(456, 1, 4, 1),
-    ...spikes(468, 0, 3),
-    spike(480),
-    pad(488),
-    block(491, 1, 2, 1), ...spikes(493, 0, 2), block(495, 2, 2, 1),
-    ...spikes(506, 0, 2),
+    // --- the warden's crawlspace (425–499): the underground signature, once.
+    // Roof at row 3, so the arc only just fits and every ceiling spike is a
+    // stretch where jumping at all is fatal. No platforms or pads under here. ---
+    ceiling(425, 74, 3),
+    ...spikes(432, 0, 2),
+    spikeDown(442, 2),
+    ...spikes(450, 0, 3),
+    spikeDown(464, 2),
+    spike(472),
+    spikeDown(480, 2),
+    ...spikes(488, 0, 2),
+
+    // --- pad climb (505–560): back under open sky, so the launch has room ---
     checkpoint(510),
-    spike(520),
-    ...spikes(530, 0, 3),
-    spike(542),
-    block(550, 0, 1, 1),
+    pad(518),
+    block(521, 1, 2, 1), ...spikes(523, 0, 2), block(525, 2, 2, 1),
+    ...spikes(536, 0, 3),
+    spike(550),
 
     // --- the warden's second tunnel (565–700): the longest width-3 run ---
     portal(566, 'triangle', 0, 1, 4),

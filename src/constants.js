@@ -11,7 +11,12 @@ export const SCROLL_VX = 560;      // constant horizontal speed, px/s (8.75 cell
 
 export const CUBE = {
   GRAVITY: 5000,
-  JUMP_VY: -1050,                  // peak ~110 px (1.7 cells), airtime 0.42 s, length ~3.7 cells
+  // Peak ~129 px (2.0 cells), airtime 0.45 s, length ~4.0 cells. Tuned so a
+  // TRIPLE spike leaves 4.4 frames — the hardest obstacle allowed sits just above
+  // the 4-frame floor. At the old -1050 a triple was 1.4 frames (unfair) and a
+  // double 8.3 (too easy), with nothing in between: see tools/window.mjs.
+  // tools/autoplay.js hardcodes this value too — change both together.
+  JUMP_VY: -1136,
   MAX_VY: 1450,                    // above |PAD.VY| so pad launches aren't clamped; fall is still
                                    // <25 px per physics step, well under one block
   SPIN_DEG: 415,                   // air spin, snaps to 90° on landing
@@ -20,6 +25,8 @@ export const CUBE = {
   SIZE: 60,                        // sprite px
 };
 
+export const TOP_Y = 16;           // world y of the playfield ceiling (top of row 9)
+
 export const SHIP = {
   GRAVITY: 1700,
   THRUST: -3400,                   // applied while held → net -1700 upward
@@ -27,6 +34,15 @@ export const SHIP = {
   W: 76, H: 44,                    // sprite px
   BODY_W: 56, BODY_H: 36,
   INNER: 26,
+  // The ship must fly: touching the roof or any surface kills. Entering the mode
+  // from a grounded cube would therefore be instant death, so the portal flings
+  // you off the floor — you are airborne before the first surface check runs.
+  LIFTOFF_VY: -420,
+  // Respawning mid-corridor can put you anywhere between floor and roof, so no
+  // single launch velocity is safe (upward kills a roof-adjacent respawn). The
+  // player comes back at rest instead, with surfaces briefly harmless so there
+  // is time to start flying.
+  RESPAWN_GRACE_MS: 350,
 };
 
 export const TRI = {
